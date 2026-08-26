@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Radar / Compass Ring (Safe area: 54 center, radius 28) -->
+    <path
+        android:fillColor="#33FFFFFF"
+        android:pathData="M54,24 A30,30 0 1,0 54,84 A30,30 0 1,0 54,24 M54,27 A27,27 0 1,1 54,81 A27,27 0 1,1 54,27" />
+
+    <!-- Cardinal Ticks -->
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M52,22 h4 v6 h-4 z M52,80 h4 v6 h-4 z M22,52 h6 v4 h-6 z M80,52 h6 v4 h-6 z" />
+
+    <!-- Sigiriya Lion Rock Fortress Plateau Monolith Silhouette -->
+    <path
+        android:fillColor="#042F2E"
+        android:pathData="M32,74 L35,58 C36,54 40,52 46,52 L62,52 C68,52 72,54 73,58 L76,74 Z" />
+
+    <!-- Sigiriya Rock Upper Tier & Palace Foundation -->
+    <path
+        android:fillColor="#0F766E"
+        android:pathData="M37,54 L39,46 C41,43 45,42 54,42 C63,42 67,43 69,46 L71,54 Z" />
+
+    <!-- Glowing Smart Path Beacon Pin -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28 C48.5,28 44,32.5 44,38 C44,45 54,58 54,58 C54,58 64,45 64,38 C64,32.5 59.5,28 54,28 Z" />
+
+    <!-- Golden Compass Star Inside Pin -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M54,32 L56,36.5 L60.5,38.5 L56,40.5 L54,45 L52,40.5 L47.5,38.5 L52,36.5 Z" />
+
+    <!-- Luminous Core -->
+    <path
+        android:fillColor="#FEF3C7"
+        android:pathData="M54,38.5m-2,0a2,2 0 1,1 4,0a2,2 0 1,1 -4,0" />
+</vector>

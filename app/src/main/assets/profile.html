@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Traveler Profile & Settings - PathWise</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal: {
+              50: '#F0FDFA',
+              100: '#CCFBF1',
+              200: '#99F6E4',
+              300: '#5EEAD4',
+              400: '#2DD4BF',
+              500: '#14B8A6',
+              600: '#0D9488',
+              700: '#0F766E',
+              800: '#115E59',
+              900: '#134E4A',
+              950: '#042F2E'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased pb-28">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <div class="max-w-3xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-teal-700 text-white flex items-center justify-center shadow-md shadow-teal-500/20">
+          <i class="fa-solid fa-user-gear text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Traveler Profile & Settings</h1>
+          <p class="text-[11px] text-teal-600 font-semibold">Account & Browser Surge Notifications</p>
+        </div>
+      </div>
+
+      <button onclick="saveProfileChanges()" class="px-3.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5">
+        <i class="fa-solid fa-floppy-disk"></i>
+        <span>Save</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-3xl mx-auto px-4 pt-4 space-y-5">
+
+    <!-- USER AUTHENTICATION & PROFILE CARD -->
+    <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4">
+        <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+          <!-- User Avatar Initials -->
+          <div class="relative">
+            <div id="userAvatarBox" class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-teal-700 to-teal-500 text-white flex items-center justify-center text-2xl font-black shadow-md border-2 border-white shadow-teal-500/20">
+              AM
+            </div>
+            <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-[9px] text-white" title="Active">
+              <i class="fa-solid fa-check"></i>
+            </span>
+          </div>
+
+          <!-- User Info Details -->
+          <div>
+            <div class="flex items-center justify-center sm:justify-start gap-2">
+              <h2 id="userNameDisplay" class="text-base sm:text-lg font-bold text-slate-900 leading-tight">Alex Morgan</h2>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-teal-50 text-teal-700 border border-teal-200">
+                Verified
+              </span>
+            </div>
+            <p id="userEmailDisplay" class="text-xs text-slate-500 mt-0.5">alex.traveler@example.com</p>
+            <div class="mt-1 flex items-center justify-center sm:justify-start gap-2">
+              <span id="userStyleBadge" class="text-[11px] font-semibold text-teal-800 bg-teal-50/80 px-2 py-0.5 rounded-md border border-teal-100">
+                🏛️ Cultural & Scenic
+              </span>
+              <span id="userTripCountBadge" class="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                3 saved places
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auth Action Buttons -->
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-center">
+          <button onclick="openAuthModal('login')" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-teal-50 hover:text-teal-800 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-right-to-bracket text-xs"></i>
+            <span>Switch / Login</span>
+          </button>
+          <button onclick="openAuthModal('register')" class="px-3 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold border border-teal-200 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-user-plus text-xs"></i>
+            <span>Register</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Demo Account Switcher -->
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs">
+        <span class="text-[11px] text-slate-400 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-bolt text-amber-500"></i> Quick Demo Logins:
+        </span>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button onclick="quickLogin('alex.traveler@example.com', 'password123')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition">
+            👤 Alex Morgan
+          </button>
+          <button onclick="quickLogin('chaminda@lanka.travel', 'password123')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition">
+            👤 Chaminda Silva
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT PROFILE DETAILS CARD -->
+    <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
+      <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+        <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-id-card"></i>
+        </div>
+        <div>
+          <h3 class="text-xs sm:text-sm font-bold text-slate-900">Personal Information</h3>
+          <p class="text-[10px] text-slate-500">Update your traveler profile</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Full Name</label>
+          <input 
+            type="text" 
+            id="inputProfileName" 
+            placeholder="Enter your name" 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+          />
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Email Address</label>
+          <input 
+            type="email" 
+            id="inputProfileEmail" 
+            placeholder="traveler@example.com" 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl text-xs sm:text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- BROWSER NOTIFICATION API & CRITICAL SURGE ALERTS CARD -->
+    <div class="bg-gradient-to-br from-teal-900 via-teal-800 to-slate-900 rounded-3xl p-5 text-white shadow-xl border border-teal-700/60 space-y-4">
+      <div class="flex items-start justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-base font-black shadow-md">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white leading-tight">Browser Notification API</h3>
+            <p class="text-[11px] text-teal-200">Alerts when a saved destination hits 'Critical Surge' (≥80%)</p>
+          </div>
+        </div>
+        <span id="browserNotifBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/20 text-teal-100 border border-white/20">
+          Checking...
+        </span>
+      </div>
+
+      <!-- Critical Surge Notification Toggle -->
+      <div class="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-between gap-3">
+        <div class="space-y-0.5">
+          <div class="font-bold text-xs flex items-center gap-1.5 text-amber-300">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Critical Surge Alert Notifications</span>
+          </div>
+          <p class="text-[11px] text-teal-100/90 leading-snug">
+            Sends native browser push alerts whenever any place in your itinerary reaches heavy traffic capacity (&ge;80%).
+          </p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+          <input type="checkbox" id="toggleCriticalSurges" onchange="handleNotificationToggle(this.checked)" class="sr-only peer">
+          <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-400"></div>
+        </label>
+      </div>
+
+      <!-- Permission Status Guidance Box -->
+      <div id="permissionStatusBox" class="p-3 rounded-2xl bg-black/20 border border-white/10 text-xs flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <i id="permissionIcon" class="fa-solid fa-info-circle text-teal-300"></i>
+          <span id="permissionMessage" class="text-[11px] text-slate-200">Checking browser permission state...</span>
+        </div>
+        <button id="requestPermissionBtn" onclick="requestBrowserPermission()" class="px-2.5 py-1 rounded-lg bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-[10px] transition hidden whitespace-nowrap">
+          Grant Permission
+        </button>
+      </div>
+
+      <!-- Instant Test Surge Notification Button -->
+      <div class="pt-1">
+        <button onclick="testBrowserSurgeNotification()" class="w-full py-2.5 px-4 rounded-2xl bg-white/15 hover:bg-white/25 active:scale-[0.99] text-white font-bold text-xs transition border border-white/20 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-paper-plane text-amber-300"></i>
+          <span>⚡ Test Browser Surge Alert Now (Simulate Sigiriya 92%)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PREFERENCES SETTINGS CARD -->
+    <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+      <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+        <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-sliders"></i>
+        </div>
+        <div>
+          <h3 class="text-xs sm:text-sm font-bold text-slate-900">Crowd Avoidance & Travel Preferences</h3>
+          <p class="text-[10px] text-slate-500">Configure smart itinerary suggestions</p>
+        </div>
+      </div>
+
+      <!-- Avoid Crowds Toggle -->
+      <div class="flex items-center justify-between py-1">
+        <div class="space-y-0.5 pr-4">
+          <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-person-walking-arrow-right text-teal-700"></i>
+            <span>Proactively Avoid Crowds</span>
+          </div>
+          <p class="text-[11px] text-slate-500">Suggest quieter alternative sites (e.g. Pidurangala instead of Sigiriya) when queue wait times exceed 30 minutes.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+          <input type="checkbox" id="prefAvoidCrowds" class="sr-only peer">
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-700"></div>
+        </label>
+      </div>
+
+      <!-- Early Bird Preference -->
+      <div class="flex items-center justify-between py-1 border-t border-slate-100 pt-3">
+        <div class="space-y-0.5 pr-4">
+          <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-sun text-amber-500"></i>
+            <span>Early Bird Departure Schedule</span>
+          </div>
+          <p class="text-[11px] text-slate-500">Prioritize 06:30 AM – 08:30 AM sunrise start times to beat tour buses and tropical midday heat.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+          <input type="checkbox" id="prefEarlyBird" class="sr-only peer">
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-700"></div>
+        </label>
+      </div>
+
+      <!-- Weather Advisory Toggle -->
+      <div class="flex items-center justify-between py-1 border-t border-slate-100 pt-3">
+        <div class="space-y-0.5 pr-4">
+          <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-cloud-rain text-sky-600"></i>
+            <span>Monsoon & Weather Alerts</span>
+          </div>
+          <p class="text-[11px] text-slate-500">Rain radar warnings and highland mist alerts for Ella and Galle coast.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+          <input type="checkbox" id="prefNotifyWeather" class="sr-only peer">
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-700"></div>
+        </label>
+      </div>
+
+      <!-- Travel Style Selector -->
+      <div class="border-t border-slate-100 pt-3 space-y-2">
+        <label class="text-xs font-bold text-slate-800 block">Preferred Travel Style</label>
+        <select id="prefTravelStyle" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20">
+          <option value="Cultural & Scenic">🏛️ Cultural & Scenic (Temples, Heritage, Trains)</option>
+          <option value="Nature & Wildlife">🌿 Nature & Wildlife (Safaris, Hikes, Tea Estates)</option>
+          <option value="Beach & Relaxation">🏖️ Beach & Relaxation (Mirissa, Surfing, Whales)</option>
+          <option value="All Round Explorer">✨ All Round Explorer (Balanced Mix)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- SRI LANKA TOURIST EMERGENCY HOTLINE -->
+    <div class="bg-red-50 rounded-3xl p-4 sm:p-5 border border-red-200/80 shadow-xs space-y-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center text-sm shadow-xs">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h3 class="text-xs sm:text-sm font-bold text-red-950">Sri Lanka Tourist Police & Emergency 24/7</h3>
+          <p class="text-[10px] text-red-800">Official government tourist safety assistance</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <a href="tel:1912" class="p-2.5 rounded-2xl bg-white border border-red-200 hover:bg-red-100/60 transition flex items-center gap-2 text-xs font-bold text-red-900 shadow-2xs">
+          <i class="fa-solid fa-phone text-red-600"></i>
+          <span>Tourist Police: 1912</span>
+        </a>
+        <a href="https://wa.me/94112421052?text=Hello%20PathWise%20Support" target="_blank" class="p-2.5 rounded-2xl bg-white border border-emerald-200 hover:bg-emerald-100/60 transition flex items-center gap-2 text-xs font-bold text-emerald-900 shadow-2xs">
+          <i class="fa-brands fa-whatsapp text-emerald-600 text-sm"></i>
+          <span>WhatsApp Help</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- DATA RESET ACTION -->
+    <div class="pt-2 text-center">
+      <button onclick="resetAllData()" class="text-xs font-semibold text-slate-400 hover:text-rose-600 transition underline">
+        Reset Itinerary and Preferences to Factory Defaults
+      </button>
+    </div>
+
+  </main>
+
+  <!-- USER AUTHENTICATION MODAL (LOGIN & REGISTRATION) -->
+  <div id="authModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 transform transition-all">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-teal-700 text-white flex items-center justify-center text-sm shadow-xs">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <h3 id="authModalTitle" class="text-sm font-bold text-slate-900">Sign In to PathWise</h3>
+            <p class="text-[10px] text-slate-500">Sync your itinerary & crowd alerts</p>
+          </div>
+        </div>
+        <button onclick="closeAuthModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="flex bg-slate-100 p-1 rounded-2xl">
+        <button id="tabBtnLogin" onclick="switchAuthTab('login')" class="flex-1 py-1.5 text-xs font-bold rounded-xl bg-white text-teal-900 shadow-xs transition">
+          Log In
+        </button>
+        <button id="tabBtnRegister" onclick="switchAuthTab('register')" class="flex-1 py-1.5 text-xs font-bold rounded-xl text-slate-600 hover:text-slate-900 transition">
+          Register
+        </button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-3">
+        <div>
+          <label class="text-[11px] font-bold text-slate-600 block mb-1">Email Address</label>
+          <input 
+            type="email" 
+            id="loginEmail" 
+            required 
+            placeholder="alex.traveler@example.com" 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+          />
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-600 block mb-1">Password</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="loginPassword" 
+              required 
+              placeholder="password123" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+            />
+            <button type="button" onclick="togglePassVisibility('loginPassword', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-xs">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <p id="loginError" class="text-[11px] text-rose-600 font-semibold hidden"></p>
+
+        <button type="submit" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-2xl text-xs shadow-md transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>Sign In to Account</span>
+        </button>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="space-y-3 hidden">
+        <div>
+          <label class="text-[11px] font-bold text-slate-600 block mb-1">Full Name</label>
+          <input 
+            type="text" 
+            id="registerName" 
+            required 
+            placeholder="e.g. Maya Fernando" 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+          />
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-600 block mb-1">Email Address</label>
+          <input 
+            type="email" 
+            id="registerEmail" 
+            required 
+            placeholder="maya@example.com" 
+            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+          />
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-600 block mb-1">Create Password</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="registerPassword" 
+              required 
+              placeholder="At least 4 characters" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+            />
+            <button type="button" onclick="togglePassVisibility('registerPassword', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-xs">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-600 block mb-1">Travel Style</label>
+          <select id="registerTravelStyle" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800">
+            <option value="Cultural & Scenic">🏛️ Cultural & Scenic</option>
+            <option value="Nature & Wildlife">🌿 Nature & Wildlife</option>
+            <option value="Beach & Relaxation">🏖️ Beach & Relaxation</option>
+            <option value="All Round Explorer">✨ All Round Explorer</option>
+          </select>
+        </div>
+        <p id="registerError" class="text-[11px] text-rose-600 font-semibold hidden"></p>
+
+        <button type="submit" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-2xl text-xs shadow-md transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-user-check"></i>
+          <span>Create Account</span>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR (Home, Trip, Profile) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg px-6 py-2">
+    <div class="max-w-md mx-auto flex items-center justify-around">
+      <a href="index.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-700 font-medium p-1 transition">
+        <i class="fa-solid fa-house text-lg"></i>
+        <span class="text-[11px]">Home</span>
+      </a>
+
+      <a href="trip.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-700 font-medium p-1 transition">
+        <i class="fa-solid fa-suitcase text-lg"></i>
+        <span class="text-[11px]">My Trip</span>
+      </a>
+
+      <a href="profile.html" class="flex flex-col items-center gap-1 text-teal-700 font-bold p-1 transition">
+        <i class="fa-solid fa-user text-lg"></i>
+        <span class="text-[11px]">Profile</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastNotification" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl shadow-xl bg-slate-900 text-white text-xs font-bold flex items-center gap-2 transition-all opacity-0 pointer-events-none transform -translate-y-2">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMessage">Settings saved successfully</span>
+  </div>
+
+  <!-- Shared Data Script -->
+  <script src="data.js"></script>
+
+  <!-- Profile Page Logic -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProfileData();
+      updateNotificationPermissionUI();
+    });
+
+    function loadProfileData() {
+      const user = PathWiseStore.getCurrentUser();
+      
+      // Update User Card
+      document.getElementById('userNameDisplay').textContent = user.name || 'Alex Morgan';
+      document.getElementById('userEmailDisplay').textContent = user.email || 'alex.traveler@example.com';
+      document.getElementById('userAvatarBox').textContent = user.avatar || 'AM';
+      document.getElementById('userStyleBadge').textContent = user.travelStyle || '🏛️ Cultural & Scenic';
+      document.getElementById('userTripCountBadge').textContent = `${(user.trip || []).length} saved place${(user.trip || []).length === 1 ? '' : 's'}`;
+
+      // Update Form Inputs
+      document.getElementById('inputProfileName').value = user.name || '';
+      document.getElementById('inputProfileEmail').value = user.email || '';
+      document.getElementById('prefAvoidCrowds').checked = !!user.avoidCrowds;
+      document.getElementById('prefEarlyBird').checked = !!user.earlyBird;
+      document.getElementById('prefNotifyWeather').checked = !!user.notifyWeather;
+      document.getElementById('prefTravelStyle').value = user.travelStyle || 'Cultural & Scenic';
+
+      // Update Notification Toggle
+      document.getElementById('toggleCriticalSurges').checked = !!user.notifySurges;
+    }
+
+    function saveProfileChanges() {
+      const newName = document.getElementById('inputProfileName').value.trim();
+      const newEmail = document.getElementById('inputProfileEmail').value.trim();
+
+      if (!newName) {
+        showToast("Please enter a valid name", false);
+        return;
+      }
+
+      const updates = {
+        name: newName,
+        email: newEmail,
+        avatar: newName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'TR',
+        avoidCrowds: document.getElementById('prefAvoidCrowds').checked,
+        earlyBird: document.getElementById('prefEarlyBird').checked,
+        notifyWeather: document.getElementById('prefNotifyWeather').checked,
+        travelStyle: document.getElementById('prefTravelStyle').value,
+        notifySurges: document.getElementById('toggleCriticalSurges').checked
+      };
+
+      PathWiseStore.updateCurrentUserProfile(updates);
+      loadProfileData();
+      showToast("Profile & preferences updated!", true);
+    }
+
+    // --- BROWSER NOTIFICATION API TOGGLE & PERMISSION LOGIC ---
+    function updateNotificationPermissionUI() {
+      const statusBadge = document.getElementById('browserNotifBadge');
+      const msgEl = document.getElementById('permissionMessage');
+      const iconEl = document.getElementById('permissionIcon');
+      const reqBtn = document.getElementById('requestPermissionBtn');
+
+      if (!PathWiseStore.isNotificationSupported()) {
+        statusBadge.textContent = "Unsupported";
+        statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/30 text-rose-200 border border-rose-400/40";
+        msgEl.textContent = "Browser Notification API not supported on this browser.";
+        iconEl.className = "fa-solid fa-circle-xmark text-rose-400";
+        reqBtn.classList.add('hidden');
+        return;
+      }
+
+      const perm = PathWiseStore.getNotificationPermission();
+      if (perm === 'granted') {
+        statusBadge.textContent = "Permission: Active ✅";
+        statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/40";
+        msgEl.textContent = "Browser notifications enabled! Live push alerts will fire on Critical Surges.";
+        iconEl.className = "fa-solid fa-circle-check text-emerald-400";
+        reqBtn.classList.add('hidden');
+      } else if (perm === 'denied') {
+        statusBadge.textContent = "Permission: Blocked 🚫";
+        statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/30 text-rose-200 border border-rose-400/40";
+        msgEl.textContent = "Notifications are blocked in your browser site permissions.";
+        iconEl.className = "fa-solid fa-ban text-rose-400";
+        reqBtn.classList.add('hidden');
+      } else {
+        statusBadge.textContent = "Permission: Needed ⚠️";
+        statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/30 text-amber-200 border border-amber-400/40";
+        msgEl.textContent = "Tap toggle or button to grant browser notification permission.";
+        iconEl.className = "fa-solid fa-bell text-amber-300";
+        reqBtn.classList.remove('hidden');
+      }
+    }
+
+    async function handleNotificationToggle(isChecked) {
+      if (isChecked) {
+        if (PathWiseStore.isNotificationSupported()) {
+          const perm = PathWiseStore.getNotificationPermission();
+          if (perm !== 'granted') {
+            const res = await PathWiseStore.requestNotificationPermission();
+            if (!res.success && res.status === 'denied') {
+              document.getElementById('toggleCriticalSurges').checked = false;
+              showToast("Browser notification permission denied in browser.", false);
+            } else if (res.success) {
+              showToast("Browser notification permission granted!", true);
+            }
+          } else {
+            PathWiseStore.updateCurrentUserProfile({ notifySurges: true });
+            showToast("Surge push notifications enabled!", true);
+          }
+        } else {
+          showToast("Notifications not supported on this browser.", false);
+        }
+      } else {
+        PathWiseStore.updateCurrentUserProfile({ notifySurges: false });
+        showToast("Surge notifications muted.", false);
+      }
+      updateNotificationPermissionUI();
+    }
+
+    async function requestBrowserPermission() {
+      const res = await PathWiseStore.requestNotificationPermission();
+      if (res.success) {
+        document.getElementById('toggleCriticalSurges').checked = true;
+        showToast("Permission granted! Real-time alerts activated.", true);
+      } else {
+        showToast(res.message, false);
+      }
+      updateNotificationPermissionUI();
+    }
+
+    function testBrowserSurgeNotification() {
+      if (!PathWiseStore.isNotificationSupported()) {
+        showToast("Browser Notification API is not supported in this browser.", false);
+        return;
+      }
+
+      if (PathWiseStore.getNotificationPermission() !== 'granted') {
+        requestBrowserPermission().then(() => {
+          PathWiseStore.checkTripSurgesAndNotify(true);
+        });
+      } else {
+        PathWiseStore.checkTripSurgesAndNotify(true);
+        showToast("Dispatched browser test notification for Sigiriya (92% Surge)!", true);
+      }
+    }
+
+    // --- AUTH MODAL & LOGINS / REGISTRATION LOGIC ---
+    function openAuthModal(mode = 'login') {
+      document.getElementById('authModal').classList.remove('hidden');
+      switchAuthTab(mode);
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+      document.getElementById('loginError').classList.add('hidden');
+      document.getElementById('registerError').classList.add('hidden');
+    }
+
+    function switchAuthTab(tab) {
+      const isLogin = tab === 'login';
+      document.getElementById('tabBtnLogin').className = isLogin 
+        ? "flex-1 py-1.5 text-xs font-bold rounded-xl bg-white text-teal-900 shadow-xs transition" 
+        : "flex-1 py-1.5 text-xs font-bold rounded-xl text-slate-600 hover:text-slate-900 transition";
+      
+      document.getElementById('tabBtnRegister').className = !isLogin 
+        ? "flex-1 py-1.5 text-xs font-bold rounded-xl bg-white text-teal-900 shadow-xs transition" 
+        : "flex-1 py-1.5 text-xs font-bold rounded-xl text-slate-600 hover:text-slate-900 transition";
+
+      document.getElementById('authModalTitle').textContent = isLogin ? "Sign In to PathWise" : "Create PathWise Account";
+      
+      if (isLogin) {
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('registerForm').classList.add('hidden');
+      } else {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('registerForm').classList.remove('hidden');
+      }
+    }
+
+    function togglePassVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.innerHTML = isPassword ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const pass = document.getElementById('loginPassword').value;
+      const errEl = document.getElementById('loginError');
+
+      const result = PathWiseStore.loginUser(email, pass);
+      if (result.success) {
+        closeAuthModal();
+        loadProfileData();
+        showToast(`Welcome back, ${result.user.name}!`, true);
+      } else {
+        errEl.textContent = result.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('registerName').value;
+      const email = document.getElementById('registerEmail').value;
+      const pass = document.getElementById('registerPassword').value;
+      const style = document.getElementById('registerTravelStyle').value;
+      const errEl = document.getElementById('registerError');
+
+      const result = PathWiseStore.registerUser(name, email, pass, style);
+      if (result.success) {
+        closeAuthModal();
+        loadProfileData();
+        showToast(`Account created! Welcome, ${result.user.name}!`, true);
+      } else {
+        errEl.textContent = result.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+
+    function quickLogin(email, pass) {
+      const result = PathWiseStore.loginUser(email, pass);
+      if (result.success) {
+        loadProfileData();
+        showToast(`Logged in as ${result.user.name}`, true);
+      }
+    }
+
+    function resetAllData() {
+      if (confirm("Reset all settings, demo state, and saved trips to defaults?")) {
+        localStorage.clear();
+        loadProfileData();
+        updateNotificationPermissionUI();
+        showToast("Reset to factory defaults", true);
+      }
+    }
+
+    function showToast(msg, isSuccess = true) {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = msg;
+      toastIcon.className = isSuccess ? "fa-solid fa-circle-check text-emerald-400" : "fa-solid fa-triangle-exclamation text-amber-400";
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

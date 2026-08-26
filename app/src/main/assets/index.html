@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PathWise Sri Lanka - Smart Real-Time Tourist Guide & Crowd Predictor</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal: {
+              50: '#F0FDFA',
+              100: '#CCFBF1',
+              200: '#99F6E4',
+              300: '#5EEAD4',
+              400: '#2DD4BF',
+              500: '#14B8A6',
+              600: '#0D9488',
+              700: '#0F766E',
+              800: '#115E59',
+              900: '#134E4A',
+              950: '#042F2E'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet.js CSS & JS CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    #map {
+      height: 320px;
+      width: 100%;
+      border-radius: 1.25rem;
+      z-index: 10;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 1rem;
+      padding: 0.25rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased pb-28">
+
+  <!-- TOP HEADER & APP BAR -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <!-- App Brand -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-700 to-teal-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
+          <i class="fa-solid fa-compass text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-teal-900 leading-tight">PathWise Sri Lanka</h1>
+          <p class="text-[10px] sm:text-[11px] font-semibold text-teal-600">Real-Time Telemetry & Crowd Predictor</p>
+        </div>
+      </div>
+
+      <!-- Action Pill Buttons (Calendar, Trip, Profile) -->
+      <div class="flex items-center gap-2">
+        <button onclick="openHolidayModal()" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition flex items-center gap-1.5" title="View Sri Lanka Calendar">
+          <i class="fa-solid fa-calendar-days text-amber-600"></i>
+          <span class="hidden sm:inline">SL Calendar</span>
+        </button>
+
+        <a href="trip.html" class="relative px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-800 text-xs font-bold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-suitcase text-teal-600"></i>
+          <span class="hidden sm:inline">Selected Sites</span>
+          <span id="headerTripCount" class="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center font-extrabold">0</span>
+        </a>
+
+        <a href="profile.html" class="px-2 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center gap-1.5">
+          <div id="headerUserAvatar" class="w-5 h-5 rounded-full bg-teal-700 text-white text-[9px] font-black flex items-center justify-center">
+            AM
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- LIVE SRI LANKAN STANDARD TIME & HOLIDAY STATUS BANNER -->
+    <div class="bg-gradient-to-r from-teal-950 via-teal-900 to-slate-900 text-white px-4 py-2 border-y border-teal-800/80">
+      <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs">
+        <!-- Live Clock -->
+        <div class="flex items-center gap-2 font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-teal-300 font-bold">SLST (UTC+05:30):</span>
+          <span id="liveSlClock" class="font-black text-amber-300 text-sm tracking-wider">--:--:-- --</span>
+          <span id="liveSlDate" class="text-teal-200 text-[11px] font-sans hidden md:inline">Loading...</span>
+        </div>
+
+        <!-- Real Holiday / Poya Status -->
+        <div class="flex items-center gap-2">
+          <span id="liveHolidayBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center gap-1.5">
+            <i class="fa-solid fa-moon text-amber-300"></i>
+            <span id="liveHolidayText">Checking Sri Lankan Poya calendar...</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH & CATEGORY FILTERS -->
+    <div class="max-w-6xl mx-auto px-4 pt-3 pb-2.5">
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <i class="fa-solid fa-magnifying-glass text-sm"></i>
+        </div>
+        <input 
+          id="searchInput" 
+          type="text" 
+          placeholder="Search Sigiriya, Nine Arch, Yala, Galle Fort, Kandy..." 
+          oninput="handleSearch(this.value)"
+          class="w-full pl-10 pr-9 py-2.5 bg-slate-100 focus:bg-white border border-slate-200 focus:border-teal-500 rounded-2xl text-xs sm:text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-inner"
+        />
+        <button id="clearSearchBtn" onclick="clearSearch()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 hidden">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pt-2.5 pb-0.5">
+        <button onclick="setFilter('All')" class="category-pill active px-3 py-1.5 rounded-full text-xs font-bold bg-teal-700 text-white shadow-xs transition-all whitespace-nowrap" data-category="All">
+          All Spots
+        </button>
+        <button onclick="setFilter('Heritage')" class="category-pill px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all whitespace-nowrap" data-category="Heritage">
+          🏛️ Heritage
+        </button>
+        <button onclick="setFilter('Beach')" class="category-pill px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all whitespace-nowrap" data-category="Beach">
+          🏖️ Beach
+        </button>
+        <button onclick="setFilter('Nature')" class="category-pill px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all whitespace-nowrap" data-category="Nature">
+          🌿 Nature & Wildlife
+        </button>
+        <button onclick="setFilter('Cultural')" class="category-pill px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all whitespace-nowrap" data-category="Cultural">
+          🛕 Cultural & Sacred
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- FLOATING HUD FOR SELECTED SITES PREDICTIONS (WHEN SITES ARE SELECTED) -->
+  <div id="selectedSitesBar" class="max-w-6xl mx-auto px-4 pt-3 hidden">
+    <div class="bg-gradient-to-r from-teal-900 to-slate-900 rounded-2xl p-3.5 text-white shadow-lg border border-teal-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shadow-xs flex-shrink-0">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-xs sm:text-sm font-bold text-white">Selected Sites Crowd Predictor</h3>
+            <span id="hudSelectedCount" class="px-2 py-0.5 rounded-full bg-teal-400/20 text-teal-300 border border-teal-400/30 text-[10px] font-black">
+              0 Selected
+            </span>
+          </div>
+          <p class="text-[11px] text-teal-100 mt-0.5">
+            Avg Crowd: <strong id="hudAvgCrowd" class="text-amber-300 font-black">--%</strong> • Factoring live weather, Poya surge & Google traffic
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-end">
+        <a href="trip.html" class="py-2 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold shadow-sm transition flex items-center gap-1.5">
+          <span>View Multi-Site Prediction & Route</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE REAL-TIME DISASTER & WEATHER HAZARDS MONITOR (DMC / NBRO) -->
+  <div class="max-w-6xl mx-auto px-4 pt-3">
+    <div class="bg-amber-50/90 border border-amber-200 rounded-2xl p-3 shadow-xs space-y-2">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xs shadow-xs">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+              <span>Sri Lanka Disaster & Monsoon Advisories (DMC & NBRO)</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </h3>
+            <p class="text-[10px] text-amber-800">Live landslide early warnings, marine swell & elephant corridor telemetry</p>
+          </div>
+        </div>
+        <button onclick="toggleDisasterDrawer()" class="text-[11px] font-bold text-amber-900 bg-amber-200/70 hover:bg-amber-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+          <span id="disasterToggleText">View 4 Active Advisories</span>
+          <i id="disasterToggleIcon" class="fa-solid fa-chevron-down text-[10px]"></i>
+        </button>
+      </div>
+
+      <!-- Expandable Disaster Feed Drawer -->
+      <div id="disasterDrawer" class="space-y-2 pt-1 hidden">
+        <div id="disasterCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-6xl mx-auto px-4 pt-3 space-y-5">
+
+    <!-- SIMULATION / TESTING TOGGLE (OPTIONAL DEBUG TOOLBAR) -->
+    <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-teal-700 text-xs"></i>
+          <span class="text-xs font-bold text-slate-800">Telemetry Mode:</span>
+          <span id="telemetryModeBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+            🟢 Real Live Sri Lanka Time & Open-Meteo Weather
+          </span>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <button onclick="toggleSimControls()" class="text-[11px] font-semibold text-teal-700 hover:text-teal-900 transition underline flex items-center gap-1">
+            <i class="fa-solid fa-flask"></i> <span>Simulation Overrides</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hidden Simulation Override Panel -->
+      <div id="simPanel" class="pt-3 border-t border-slate-100 mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 hidden">
+        <!-- Poya Override -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-xs font-semibold text-slate-700">Simulate Poya Surge</span>
+          <input type="checkbox" id="simPoyaToggle" onchange="handleSimPoya(this.checked)" class="rounded text-teal-600 w-4 h-4" />
+        </div>
+        <!-- Rain Override -->
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-xs font-semibold text-slate-700">Simulate Heavy Rain</span>
+          <input type="checkbox" id="simRainToggle" onchange="handleSimRain(this.checked)" class="rounded text-teal-600 w-4 h-4" />
+        </div>
+        <!-- Reset Button -->
+        <button onclick="resetSimOverrides()" class="p-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition flex items-center justify-center gap-1">
+          <i class="fa-solid fa-rotate-left"></i> Reset to 100% Real Live
+        </button>
+      </div>
+    </div>
+
+    <!-- LEAFLET MAP WITH GOOGLE MAPS ROUTING LINKS -->
+    <div class="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-map-location-dot"></i>
+          </div>
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold text-slate-900">Sri Lanka Live Destination Map</h2>
+            <p class="text-[11px] text-slate-500">Real-time crowd heatmaps & direct Google Maps navigation</p>
+          </div>
+        </div>
+
+        <!-- Google Maps Satellite / OpenStreetMap toggle -->
+        <div class="flex items-center gap-1.5 self-end sm:self-auto text-xs">
+          <button id="btnMapOsm" onclick="setMapLayer('osm')" class="px-2.5 py-1 rounded-lg bg-teal-700 text-white font-bold text-[11px] transition shadow-xs">
+            Street Map
+          </button>
+          <button id="btnMapSat" onclick="setMapLayer('sat')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
+            Satellite View
+          </button>
+          <button id="btnLiveTraffic" onclick="PathWiseStore.openExternalUrl('https://www.google.com/maps/search/Sri+Lanka+tourist+attractions/@7.8731,80.7718,8z/data=!5m1!1e1')" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] border border-blue-200 transition flex items-center gap-1">
+            <i class="fa-brands fa-google"></i> Live Traffic
+          </button>
+        </div>
+      </div>
+
+      <!-- Map Viewport -->
+      <div id="map" class="shadow-inner border border-slate-200"></div>
+
+      <!-- Map Legend -->
+      <div class="flex items-center justify-between flex-wrap gap-2 text-[11px] pt-1 text-slate-600">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+            <span>Quiet (&lt;50%)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+            <span>Moderate (50-79%)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+            <span>Critical Surge (&ge;80%)</span>
+          </div>
+        </div>
+        <div class="text-teal-700 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-cloud-sun"></i> Real-time Open-Meteo weather synced
+        </div>
+      </div>
+    </div>
+
+    <!-- DESTINATION CARDS SECTION -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">Sri Lanka Destinations (<span id="spotsCount">0</span>)</h2>
+          <p class="text-xs text-slate-500">Live crowd levels & multi-factor predictions (Weather, Poya, Traffic)</p>
+        </div>
+        <button onclick="fetchAllLiveWeathers()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 hover:text-teal-800 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate text-xs"></i>
+          <span>Refresh Weather</span>
+        </button>
+      </div>
+
+      <!-- Destination Cards Grid -->
+      <div id="destinationsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically rendered via JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- OFFICIAL SRI LANKA HOLIDAY & POYA CALENDAR MODAL -->
+  <div id="holidayModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-base shadow-xs">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">Sri Lanka Official Calendar</h3>
+            <p class="text-[11px] text-slate-500">Poya Full Moon, Public & Bank Holidays (2025 - 2027)</p>
+          </div>
+        </div>
+        <button onclick="closeHolidayModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Current Date & Poya Context Box -->
+      <div class="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs space-y-1">
+        <div class="font-bold text-amber-950 flex items-center gap-1.5">
+          <i class="fa-solid fa-clock text-amber-600"></i>
+          <span>Today in Sri Lanka: <strong id="modalTodayDate">--</strong></span>
+        </div>
+        <p class="text-[11px] text-amber-800">
+          On Full Moon Poya days, all sacred Buddhist heritage sites (Tooth Temple, Ruwanwelisaya, Dambulla) observe high pilgrimage surges. Liquor stores and meat markets are closed island-wide.
+        </p>
+      </div>
+
+      <!-- Scrollable List of Holidays -->
+      <div id="holidaysListContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 text-xs">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Footer Action -->
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+        <a href="https://calendar.google.com/calendar" target="_blank" class="text-xs font-bold text-teal-700 hover:underline flex items-center gap-1">
+          <i class="fa-brands fa-google"></i> Open Google Calendar
+        </a>
+        <button onclick="closeHolidayModal()" class="px-4 py-2 bg-teal-700 text-white font-bold rounded-xl text-xs shadow-xs">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR (Home, Trip, Profile) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-lg px-6 py-2">
+    <div class="max-w-md mx-auto flex items-center justify-around">
+      <a href="index.html" class="flex flex-col items-center gap-1 text-teal-700 font-bold p-1 transition">
+        <i class="fa-solid fa-house text-lg"></i>
+        <span class="text-[11px]">Home</span>
+      </a>
+
+      <a href="trip.html" class="relative flex flex-col items-center gap-1 text-slate-400 hover:text-teal-700 font-medium p-1 transition">
+        <i class="fa-solid fa-suitcase text-lg"></i>
+        <span class="text-[11px]">Selected Sites</span>
+        <span id="navTripBadge" class="absolute top-0 right-2 w-4 h-4 rounded-full bg-teal-600 text-white text-[9px] font-extrabold flex items-center justify-center hidden">0</span>
+      </a>
+
+      <a href="profile.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-700 font-medium p-1 transition">
+        <i class="fa-solid fa-user text-lg"></i>
+        <span class="text-[11px]">Profile</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastNotification" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl shadow-xl bg-slate-900 text-white text-xs font-bold flex items-center gap-2 transition-all opacity-0 pointer-events-none transform -translate-y-2">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMessage">Updated!</span>
+  </div>
+
+  <!-- Shared Data Script -->
+  <script src="data.js"></script>
+
+  <!-- Main Page Logic -->
+  <script>
+    let activeFilter = 'All';
+    let searchQuery = '';
+    let map = null;
+    let markersLayer = null;
+    let currentTileLayer = null;
+    let liveWeatherMap = {}; // destId -> live open-meteo weather
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initUserHeader();
+      startSriLankaClock();
+      renderDisasterFeeds();
+      initLeafletMap();
+      renderDestinations();
+      updateTripBadges();
+      fetchAllLiveWeathers();
+
+      // Hook in-app surge alert callback
+      window.onPathWiseSurgeAlert = function(dest) {
+        console.log("Critical Surge Alert triggered for:", dest.name);
+      };
+    });
+
+    function initUserHeader() {
+      const user = PathWiseStore.getCurrentUser();
+      const avEl = document.getElementById('headerUserAvatar');
+      if (avEl) avEl.textContent = user.avatar || 'TR';
+    }
+
+    // --- REAL SRI LANKA STANDARD TIME CLOCK TICKER ---
+    function startSriLankaClock() {
+      function updateClock() {
+        const sl = PathWiseStore.getSriLankaTime();
+        document.getElementById('liveSlClock').textContent = sl.formattedTime;
+        document.getElementById('liveSlDate').textContent = `${sl.dayOfWeek}, ${sl.formattedDate}`;
+
+        // Update Holiday Banner
+        const holidayInfo = PathWiseStore.getCurrentOrUpcomingHoliday();
+        const holBadge = document.getElementById('liveHolidayBadge');
+        const holText = document.getElementById('liveHolidayText');
+
+        if (holidayInfo.isToday) {
+          holBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400 text-slate-950 border border-amber-300 flex items-center gap-1.5 animate-bounce";
+          holText.textContent = `🎉 TODAY: ${holidayInfo.holiday.name}`;
+        } else {
+          holBadge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center gap-1.5";
+          holText.textContent = holidayInfo.label;
+        }
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    // --- REAL DISASTER & MONSOON ADVISORIES ---
+    function renderDisasterFeeds() {
+      const feeds = PathWiseStore.getDisasterFeeds();
+      const container = document.getElementById('disasterCardsContainer');
+      container.innerHTML = feeds.map(feed => {
+        return `
+          <div class="p-2.5 rounded-xl bg-white border border-amber-200/90 shadow-2xs space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-900 flex items-center gap-1.5">
+                <i class="fa-solid ${feed.icon} text-${feed.color}-600"></i>
+                <span>${feed.type}</span>
+              </span>
+              <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                ${feed.level}
+              </span>
+            </div>
+            <p class="text-[11px] font-semibold text-slate-700 leading-snug">${feed.headline}</p>
+            <p class="text-[10px] text-slate-500">${feed.advice}</p>
+            <div class="text-[9px] text-teal-700 font-bold pt-0.5 flex items-center gap-1">
+              <i class="fa-solid fa-building-shield"></i>
+              <span>${feed.source}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleDisasterDrawer() {
+      const drawer = document.getElementById('disasterDrawer');
+      const icon = document.getElementById('disasterToggleIcon');
+      const isHidden = drawer.classList.contains('hidden');
+
+      if (isHidden) {
+        drawer.classList.remove('hidden');
+        icon.className = "fa-solid fa-chevron-up text-[10px]";
+      } else {
+        drawer.classList.add('hidden');
+        icon.className = "fa-solid fa-chevron-down text-[10px]";
+      }
+    }
+
+    // --- OPEN-METEO REAL WEATHER FETCH ---
+    async function fetchAllLiveWeathers() {
+      const destinations = PathWiseStore.getDestinations();
+      for (const dest of destinations) {
+        PathWiseStore.fetchLiveWeatherForDestination(dest).then(weather => {
+          liveWeatherMap[dest.id] = weather;
+          // Update card DOM elements if present
+          const tempEl = document.getElementById(`temp-${dest.id}`);
+          const iconEl = document.getElementById(`weather-icon-${dest.id}`);
+          const condEl = document.getElementById(`cond-${dest.id}`);
+          if (tempEl) tempEl.textContent = weather.temp;
+          if (iconEl) iconEl.className = `fa-solid ${weather.weatherIcon} text-amber-300`;
+          if (condEl) condEl.textContent = weather.weatherCondition;
+        });
+      }
+    }
+
+    // --- LEAFLET INTERACTIVE MAP WITH GOOGLE MAPS TILES & LIVE TRAFFIC LINKS ---
+    function initLeafletMap() {
+      map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([7.8731, 80.7718], 7);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      setMapLayer('osm');
+
+      markersLayer = L.layerGroup().addTo(map);
+      renderMapMarkers();
+    }
+
+    function setMapLayer(type) {
+      if (currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+      }
+
+      if (type === 'sat') {
+        // ESRI Satellite Tiles
+        currentTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom: 18,
+        }).addTo(map);
+        document.getElementById('btnMapSat').className = "px-2.5 py-1 rounded-lg bg-teal-700 text-white font-bold text-[11px] transition shadow-xs";
+        document.getElementById('btnMapOsm').className = "px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition";
+      } else {
+        // OpenStreetMap Standard Tiles
+        currentTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+        }).addTo(map);
+        document.getElementById('btnMapOsm').className = "px-2.5 py-1 rounded-lg bg-teal-700 text-white font-bold text-[11px] transition shadow-xs";
+        document.getElementById('btnMapSat').className = "px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition";
+      }
+    }
+
+    function renderMapMarkers() {
+      if (!markersLayer) return;
+      markersLayer.clearLayers();
+
+      const destinations = getFilteredDestinations();
+
+      destinations.forEach(dest => {
+        const color = dest.badge.colorHex;
+
+        const customIcon = L.divIcon({
+          className: 'custom-map-pin',
+          html: `
+            <div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 8px -1px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 800;">
+              ${dest.currentCrowd}%
+            </div>
+          `,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15]
+        });
+
+        const marker = L.marker([dest.lat, dest.lng], { icon: customIcon });
+
+        const weather = liveWeatherMap[dest.id] || { temp: dest.temp, weatherCondition: dest.weatherCondition };
+        const gmapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest.name + ' ' + dest.location)}&travelmode=driving`;
+        const inTrip = PathWiseStore.isInTrip(dest.id);
+
+        const popupContent = `
+          <div style="font-family: inherit; width: 230px; padding: 2px;">
+            <img src="${dest.photo}" alt="${dest.name}" style="width: 100%; height: 95px; object-fit: cover; border-radius: 8px; margin-bottom: 6px;" decoding="async" onerror="this.style.background='#0F172A';" />
+            <div style="font-weight: 800; font-size: 12px; color: #0F172A; margin-bottom: 2px; line-height: 1.2;">${dest.name}</div>
+            <div style="font-size: 10px; color: #64748B; margin-bottom: 6px;">${dest.location}</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 10px; font-weight: 800; color: ${color}; background: #F1F5F9; padding: 2px 6px; border-radius: 4px;">
+                ${dest.badge.label}
+              </span>
+              <span style="font-size: 10px; font-weight: 700; color: #0284C7;">🌡️ ${weather.temp}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px;">
+              <a href="details.html?id=${dest.id}" style="display: block; text-align: center; background: #0F766E; color: white; padding: 6px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-decoration: none;">
+                Factor Breakdown
+              </a>
+              <button onclick="toggleQuickSelect('${dest.id}')" style="display: block; text-align: center; background: ${inTrip ? '#059669' : '#F59E0B'}; color: ${inTrip ? '#FFFFFF' : '#0F172A'}; padding: 6px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; border: none; cursor: pointer;">
+                ${inTrip ? '✓ Selected' : '+ Select Site'}
+              </button>
+            </div>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        markersLayer.addLayer(marker);
+      });
+    }
+
+    // --- SEARCH & FILTER LOGIC ---
+    function getFilteredDestinations() {
+      const all = PathWiseStore.getDestinations();
+      return all.filter(item => {
+        const matchesCategory = activeFilter === 'All' || item.category.toLowerCase() === activeFilter.toLowerCase();
+        const matchesSearch = !searchQuery || 
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          item.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+    }
+
+    function setFilter(cat) {
+      activeFilter = cat;
+      document.querySelectorAll('.category-pill').forEach(btn => {
+        if (btn.dataset.category === cat) {
+          btn.classList.add('bg-teal-700', 'text-white');
+          btn.classList.remove('bg-slate-100', 'text-slate-700');
+        } else {
+          btn.classList.remove('bg-teal-700', 'text-white');
+          btn.classList.add('bg-slate-100', 'text-slate-700');
+        }
+      });
+      refreshData();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.trim();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+      refreshData();
+    }
+
+    function clearSearch() {
+      const input = document.getElementById('searchInput');
+      input.value = '';
+      handleSearch('');
+    }
+
+    function refreshData() {
+      renderDestinations();
+      renderMapMarkers();
+      updateTripBadges();
+    }
+
+    // --- RENDER DESTINATION CARDS ---
+    function renderDestinations() {
+      const list = getFilteredDestinations();
+      const grid = document.getElementById('destinationsGrid');
+      const countEl = document.getElementById('spotsCount');
+      if (countEl) countEl.textContent = list.length;
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-500 space-y-2">
+            <i class="fa-solid fa-map-location-dot text-4xl text-slate-300"></i>
+            <p class="text-sm font-semibold">No Sri Lankan spots found matching your search.</p>
+            <button onclick="setFilter('All'); clearSearch();" class="px-4 py-2 bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm">Reset Filters</button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = list.map(dest => {
+        const weather = liveWeatherMap[dest.id] || { temp: dest.temp, weatherCondition: dest.weatherCondition, weatherIcon: dest.weatherIcon };
+        const gmapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest.name + ' ' + dest.location)}&travelmode=driving`;
+        const inTrip = PathWiseStore.isInTrip(dest.id);
+
+        // Get live factor snippet for this destination
+        const breakdown = PathWiseStore.calculateDetailedFactorBreakdown(dest);
+
+        return `
+          <div class="group bg-white rounded-3xl border ${inTrip ? 'border-teal-500 ring-2 ring-teal-500/20' : 'border-slate-200/90'} shadow-sm hover:shadow-md hover:border-teal-500/60 overflow-hidden transition-all duration-200 flex flex-col">
+            <!-- Photo & Badges -->
+            <div class="relative h-48 w-full overflow-hidden bg-slate-100 cursor-pointer" onclick="window.location.href='details.html?id=${dest.id}'">
+              <img src="${dest.photo}" alt="${dest.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 16 9\' fill=\'%230f172a\'%3E%3C/svg%3E'" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
+              
+              <!-- Real Crowd Density Badge -->
+              <div class="absolute top-3 right-3 flex items-center gap-1.5">
+                <span class="px-2.5 py-1 rounded-full text-xs font-extrabold shadow-md border ${dest.badge.badgeClass} flex items-center gap-1.5 backdrop-blur-md">
+                  <span class="w-2 h-2 rounded-full ${dest.badge.dotClass} animate-pulse"></span>
+                  <span>${dest.badge.label}</span>
+                </span>
+              </div>
+
+              <!-- Quick Selection Pill on Card Photo -->
+              <button 
+                onclick="event.stopPropagation(); toggleQuickSelect('${dest.id}')"
+                class="absolute top-3 left-3 px-2.5 py-1 rounded-xl text-xs font-black shadow-md backdrop-blur-md transition flex items-center gap-1.5 ${inTrip ? 'bg-emerald-600 text-white' : 'bg-black/60 hover:bg-amber-500 hover:text-slate-950 text-white'}"
+                title="Select destination for multi-factor crowd prediction"
+              >
+                <i class="fa-solid ${inTrip ? 'fa-check' : 'fa-plus'} text-[10px]"></i>
+                <span>${inTrip ? 'Selected' : 'Select'}</span>
+              </button>
+
+              <!-- Bottom Overlay: Rating & Live Open-Meteo Weather -->
+              <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-xs font-bold">
+                <div class="flex items-center gap-1 text-amber-300 bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                  <i class="fa-solid fa-star text-[10px]"></i>
+                  <span>${dest.rating}</span>
+                  <span class="text-white/70 text-[10px]">(${dest.reviews > 1000 ? (dest.reviews/1000).toFixed(1)+'k' : dest.reviews})</span>
+                </div>
+                <div class="bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-xs flex items-center gap-1.5 text-sky-200">
+                  <i id="weather-icon-${dest.id}" class="fa-solid ${weather.weatherIcon} text-amber-300"></i>
+                  <span id="temp-${dest.id}">${weather.temp}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Content -->
+            <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+              <div>
+                <h3 onclick="window.location.href='details.html?id=${dest.id}'" class="font-bold text-slate-900 text-base hover:text-teal-700 transition leading-snug cursor-pointer">
+                  ${dest.name}
+                </h3>
+                <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <i class="fa-solid fa-location-dot text-teal-600"></i>
+                  <span>${dest.location}</span>
+                </p>
+
+                <!-- Predictive Factor Snippets -->
+                <div class="mt-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100 space-y-1 text-[11px]">
+                  <div class="flex items-center justify-between font-semibold text-slate-700">
+                    <span class="flex items-center gap-1">
+                      <i class="fa-solid fa-clock text-teal-600"></i>
+                      <span>Best Time: ${dest.bestTimeOfDay.split('(')[0].trim()}</span>
+                    </span>
+                    <span class="text-teal-700 font-bold">${dest.badge.queueEstimate}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                    <span class="truncate flex items-center gap-1">
+                      <i class="fa-solid fa-train text-teal-600"></i>
+                      <span>${dest.trainStation.split('(')[0]}</span>
+                    </span>
+                    <span class="font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
+                      <i class="fa-solid fa-chart-simple text-[9px]"></i> BestTime Verified
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Bar: Direct Links -->
+              <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button onclick="PathWiseStore.openMapsDirections('${dest.name}', ${dest.lat}, ${dest.lng})" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 text-xs font-bold transition flex items-center gap-1">
+                  <i class="fa-brands fa-google text-blue-600"></i>
+                  <span>Maps</span>
+                </button>
+
+                <a href="details.html?id=${dest.id}" class="px-3.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition flex items-center gap-1 shadow-xs">
+                  <span>Factor Breakdown</span>
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleQuickSelect(destId) {
+      const inTrip = PathWiseStore.isInTrip(destId);
+      const dest = PathWiseStore.getDestinationById(destId);
+
+      if (inTrip) {
+        PathWiseStore.removeFromTrip(destId);
+        showToast(`Removed ${dest ? dest.name : 'site'} from selected predictions`, false);
+      } else {
+        PathWiseStore.addToTrip(destId);
+        showToast(`Added ${dest ? dest.name : 'site'} for crowd prediction!`, true);
+      }
+
+      refreshData();
+    }
+
+    function updateTripBadges() {
+      const trip = PathWiseStore.getTrip();
+      const allDest = PathWiseStore.getDestinations();
+      const count = trip.length;
+
+      const hCount = document.getElementById('headerTripCount');
+      const navBadge = document.getElementById('navTripBadge');
+      const hudBar = document.getElementById('selectedSitesBar');
+      const hudCount = document.getElementById('hudSelectedCount');
+      const hudAvg = document.getElementById('hudAvgCrowd');
+
+      if (hCount) hCount.textContent = count;
+      if (navBadge) {
+        navBadge.textContent = count;
+        if (count > 0) {
+          navBadge.classList.remove('hidden');
+        } else {
+          navBadge.classList.add('hidden');
+        }
+      }
+
+      if (hudBar) {
+        if (count > 0) {
+          hudBar.classList.remove('hidden');
+          hudCount.textContent = `${count} Site${count === 1 ? '' : 's'} Selected`;
+
+          let totalCrowd = 0;
+          let valid = 0;
+          trip.forEach(item => {
+            const d = allDest.find(x => x.id === item.id);
+            if (d) {
+              totalCrowd += d.currentCrowd;
+              valid++;
+            }
+          });
+          const avg = valid > 0 ? Math.round(totalCrowd / valid) : 0;
+          hudAvg.textContent = `${avg}%`;
+        } else {
+          hudBar.classList.add('hidden');
+        }
+      }
+    }
+
+    // --- SRI LANKA HOLIDAY MODAL ---
+    function openHolidayModal() {
+      const modal = document.getElementById('holidayModal');
+      const listContainer = document.getElementById('holidaysListContainer');
+      const todayDateEl = document.getElementById('modalTodayDate');
+
+      const sl = PathWiseStore.getSriLankaTime();
+      todayDateEl.textContent = `${sl.formattedDate} (${sl.formattedTime})`;
+
+      const holidays = PathWiseStore.getSriLankanHolidays();
+      const todayIso = sl.dateIso;
+
+      listContainer.innerHTML = holidays.map(h => {
+        const isPast = h.date < todayIso;
+        const isToday = h.date === todayIso;
+
+        return `
+          <div class="p-2.5 rounded-2xl ${isToday ? 'bg-amber-100 border-amber-300 font-bold' : isPast ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200'} border flex items-center justify-between gap-2">
+            <div class="space-y-0.5">
+              <div class="text-xs font-bold ${isToday ? 'text-amber-950' : 'text-slate-900'} flex items-center gap-1.5">
+                <span>${h.name}</span>
+                ${isToday ? '<span class="px-1.5 py-0.2 rounded bg-amber-500 text-white text-[9px]">TODAY</span>' : ''}
+              </div>
+              <div class="text-[10px] text-slate-500">${h.type}</div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <span class="text-xs font-mono font-bold text-slate-700">${h.date}</span>
+              <span class="block text-[9px] font-bold ${h.impact === 'critical' ? 'text-rose-600' : 'text-amber-600'} uppercase">${h.impact} Surge</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeHolidayModal() {
+      document.getElementById('holidayModal').classList.add('hidden');
+    }
+
+    // --- SIMULATION CONTROLS ---
+    function toggleSimControls() {
+      const panel = document.getElementById('simPanel');
+      panel.classList.toggle('hidden');
+    }
+
+    function handleSimPoya(checked) {
+      PathWiseStore.setManualOverride({ overridePoya: checked });
+      updateSimBadge();
+      refreshData();
+    }
+
+    function handleSimRain(checked) {
+      PathWiseStore.setManualOverride({ overrideRain: checked });
+      updateSimBadge();
+      refreshData();
+    }
+
+    function resetSimOverrides() {
+      PathWiseStore.resetManualOverrides();
+      document.getElementById('simPoyaToggle').checked = false;
+      document.getElementById('simRainToggle').checked = false;
+      updateSimBadge();
+      refreshData();
+    }
+
+    function updateSimBadge() {
+      const ov = PathWiseStore.getManualOverride();
+      const badge = document.getElementById('telemetryModeBadge');
+      if (ov.overridePoya !== null || ov.overrideRain !== null) {
+        badge.textContent = "🧪 Simulation Override Active";
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200";
+      } else {
+        badge.textContent = "🟢 Real Live Sri Lanka Time & Open-Meteo Weather";
+        badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200";
+      }
+    }
+
+    function showToast(msg, isSuccess) {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = msg;
+      toastIcon.className = isSuccess ? "fa-solid fa-circle-check text-emerald-400" : "fa-solid fa-info text-amber-400";
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+      }, 2200);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "name": "PathWise",
+  "description": "Sri Lanka AI Tourist Guide, Real-time Crowd Prediction, Travel Bookings & Smart Route Nudge Platform",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

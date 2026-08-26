@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PathWise - Sri Lanka AI Smart Tourist Guide & Crowd Prediction</title>
+  
+  <!-- Tailwind CSS & FontAwesome & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Map & Chart.js -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#F0FDFA',
+              100: '#CCFBF1',
+              200: '#99F6E4',
+              300: '#5EEAD4',
+              400: '#2DD4BF',
+              500: '#14B8A6',
+              600: '#0D9488', // Primary Teal
+              700: '#0F766E', // Deep Teal matching screenshot
+              800: '#115E59',
+              900: '#134E4A',
+              950: '#042F2E'
+            },
+            surface: {
+              light: '#F8FAFC',
+              card: '#FFFFFF',
+              border: '#E2E8F0',
+              text: '#0F172A',
+              muted: '#64748B'
+            }
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            serif: ['Playfair Display', 'serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F0F4F8;
+      color: #0F172A;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .font-brand {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.03);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 999px;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 16px;
+      padding: 4px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .pulse-dot {
+      animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- 1. AUTH SCREEN (Matching User's Uploaded Screenshot Exactly) -->
+  <div id="authScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#F0F4F8] p-4 transition-all duration-300">
+    <div class="w-full max-w-md bg-white rounded-[32px] shadow-2xl p-8 sm:p-10 border border-slate-100 relative flex flex-col items-center">
+      
+      <!-- Top Brand Pin Icon -->
+      <div class="w-16 h-16 rounded-full bg-[#E6F4F1] flex items-center justify-center mb-5 text-brand-700 shadow-sm">
+        <i class="fa-solid fa-location-dot text-2xl"></i>
+      </div>
+
+      <!-- App Title & Tagline -->
+      <h1 class="font-brand text-3xl sm:text-4xl font-bold text-slate-900 mb-1">PathWise</h1>
+      <p class="text-slate-500 text-sm font-medium mb-8 text-center">Travel smarter. Skip the crowds.</p>
+
+      <!-- Tech Badges / Model Highlights -->
+      <div class="w-full bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-3.5 mb-6 text-xs text-slate-700 space-y-1.5 shadow-sm">
+        <div class="font-semibold text-slate-800 text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-microchip text-brand-600"></i> AI Tourism Prediction & Nudge Engine
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          <span>LSTM Crowd Forecasting Model (2-3 Hr Lookahead)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>Behavioral Nudge Engine & Dispersal Routes</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Real-time Crowd Mitigation & Telematics</span>
+        </div>
+      </div>
+
+      <!-- Form Inputs -->
+      <div class="w-full space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Email</label>
+          <input id="loginEmail" type="email" value="tourist@example.com" class="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white text-slate-900 transition" />
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-semibold text-slate-700">Password</label>
+            <a href="javascript:void(0)" onclick="alert('Password reset link sent to demo email.')" class="text-xs text-brand-700 font-medium hover:underline">Forgot?</a>
+          </div>
+          <input id="loginPassword" type="password" value="••••••••" class="w-full px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white text-slate-900 transition" />
+        </div>
+
+        <!-- Primary Sign In Button -->
+        <button id="signInBtn" onclick="app.login('tourist')" class="w-full py-3.5 bg-brand-700 hover:bg-brand-800 text-white font-semibold rounded-xl shadow-lg shadow-brand-700/30 transition transform active:scale-[0.98] text-sm flex items-center justify-center gap-2">
+          <span>Sign In</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+
+        <!-- Guest & Quick Access -->
+        <div class="pt-2 text-center space-y-2">
+          <p class="text-xs text-slate-500">
+            Don't have an account? <a href="javascript:void(0)" onclick="app.login('tourist')" class="text-brand-700 font-semibold hover:underline">Sign up</a>
+          </p>
+          <button onclick="app.login('tourist')" class="text-xs text-slate-600 font-medium hover:text-brand-700 transition">
+            Continue as guest
+          </button>
+        </div>
+
+        <!-- Quick Switch for Admin Portal Demo -->
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Explore Roles:</span>
+          <div class="flex gap-2">
+            <button onclick="app.login('tourist')" class="px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700 hover:bg-brand-50 hover:text-brand-700 font-medium">Tourist App</button>
+            <button onclick="app.login('admin')" class="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-lg hover:bg-amber-200 font-medium flex items-center gap-1">
+              <i class="fa-solid fa-shield-halved text-[10px]"></i> Admin Portal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MAIN APPLICATION SHELL -->
+  <div id="mainApp" class="hidden flex-1 flex flex-col h-screen overflow-hidden">
+    
+    <!-- TOP HEADER -->
+    <header class="glass-nav border-b border-slate-200/80 px-4 py-2.5 flex items-center justify-between z-30 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-brand-700 text-white flex items-center justify-center shadow-md shadow-brand-700/20 cursor-pointer" onclick="app.navigate('explore')">
+          <i class="fa-solid fa-location-dot text-sm"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-brand font-bold text-lg text-slate-900 tracking-tight">PathWise</span>
+            <span id="roleBadge" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-800 tracking-wider">Tourist</span>
+          </div>
+          <p class="text-[10px] text-slate-500 flex items-center gap-1">
+            <i class="fa-solid fa-circle text-[6px] text-emerald-500 pulse-dot"></i>
+            <span id="liveStatusText">Live LSTM Crowd Engine Active · Sri Lanka</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="app.openHolidaysModal()" class="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-1.5 hover:bg-amber-100 transition shadow-sm" title="Sri Lanka Holidays & Poya Calendar">
+          <i class="fa-solid fa-calendar-day text-amber-600"></i>
+          <span class="hidden sm:inline">Poya & Holidays</span>
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+        </button>
+
+        <a href="https://wa.me/94112421052?text=Hello%20PathWise%20Tourist%20Support,%20I%20need%20assistance%20with%20my%20travel%20in%20Sri%20Lanka" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5 hover:bg-emerald-100 transition shadow-sm" title="24/7 WhatsApp Sri Lanka Tourist Police & Concierge">
+          <i class="fa-brands fa-whatsapp text-emerald-600 text-sm"></i>
+          <span class="hidden md:inline">WhatsApp Help</span>
+        </a>
+
+        <button id="adminToggleBtn" onclick="app.toggleRole()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-sliders text-slate-500"></i>
+          <span id="toggleRoleLabel" class="hidden sm:inline">Admin Portal</span>
+        </button>
+
+        <div class="relative">
+          <button onclick="app.logout()" class="w-8 h-8 rounded-xl bg-slate-200 text-slate-700 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition text-xs" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT BODY -->
+    <div class="flex-1 flex overflow-hidden relative">
+      
+      <!-- DESKTOP SIDEBAR -->
+      <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 p-4 space-y-1 flex-shrink-0">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Explore & Plan</div>
+        
+        <button onclick="app.navigate('explore')" class="nav-tab active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition" data-view="explore">
+          <i class="fa-solid fa-compass w-5 text-brand-700"></i>
+          <span>Attractions & Crowd</span>
+        </button>
+
+        <button onclick="app.navigate('map')" class="nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition" data-view="map">
+          <i class="fa-solid fa-map-location-dot w-5 text-slate-400"></i>
+          <span>Live Interactive Map</span>
+        </button>
+
+        <button onclick="app.navigate('stays')" class="nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition" data-view="stays">
+          <i class="fa-solid fa-hotel w-5 text-slate-400"></i>
+          <span>Accommodations</span>
+        </button>
+
+        <button onclick="app.navigate('transit')" class="nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition" data-view="transit">
+          <i class="fa-solid fa-train-subway w-5 text-slate-400"></i>
+          <span>Trains & Buses (RDMNS)</span>
+        </button>
+
+        <button onclick="app.navigate('ai-guide')" class="nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition" data-view="ai-guide">
+          <i class="fa-solid fa-wand-magic-sparkles w-5 text-amber-500"></i>
+          <span>AI Travel Concierge</span>
+        </button>
+
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 pt-4 mb-2">Sri Lanka Insights</div>
+
+        <button onclick="app.navigate('holidays')" class="nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition" data-view="holidays">
+          <i class="fa-solid fa-moon w-5 text-indigo-500"></i>
+          <span>Poya & Event Calendar</span>
+        </button>
+
+        <button onclick="app.navigate('social')" class="nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition" data-view="social">
+          <i class="fa-brands fa-instagram w-5 text-pink-500"></i>
+          <span>Social Media Buzz</span>
+        </button>
+
+        <!-- Admin Only Tab -->
+        <div id="adminNavGroup" class="hidden pt-4 border-t border-slate-100">
+          <div class="text-[11px] font-bold text-amber-600 uppercase tracking-wider px-3 mb-2">Management</div>
+          <button onclick="app.navigate('admin')" class="nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-amber-900 bg-amber-50/80 hover:bg-amber-100 transition" data-view="admin">
+            <i class="fa-solid fa-chart-line w-5 text-amber-600"></i>
+            <span>Analytics & Overrides</span>
+          </button>
+        </div>
+
+        <!-- Emergency / Tourist Helpline Footer -->
+        <div class="mt-auto pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-2">
+          <div class="bg-red-50 p-2.5 rounded-xl border border-red-100">
+            <div class="font-bold text-red-800 flex items-center gap-1">
+              <i class="fa-solid fa-phone-volume"></i> Tourist Police: 1912
+            </div>
+            <div class="text-[10px] text-red-600">Emergency Ambulance: 1990</div>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span>PathWise v3.2 Pro</span>
+            <span class="text-brand-700 font-semibold">LSTM Online</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN DYNAMIC VIEW CONTAINER -->
+      <main id="viewContainer" class="flex-1 bg-[#F0F4F8] overflow-y-auto p-3 sm:p-5 relative pb-20 md:pb-6">
+        
+        <!-- VIEW 1: EXPLORE & ATTRACTIONS -->
+        <section id="view-explore" class="space-y-5 max-w-6xl mx-auto">
+          
+          <!-- Live AI Surge & Recommendation Nudge Banner -->
+          <div class="bg-gradient-to-r from-teal-800 via-brand-700 to-teal-900 rounded-3xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none text-9xl">
+              <i class="fa-solid fa-mountain-sun"></i>
+            </div>
+            <div class="relative z-10">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <span class="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide flex items-center gap-1.5">
+                  <i class="fa-solid fa-sparkles text-amber-300"></i> AI Real-Time Behavioral Nudge
+                </span>
+                <span class="text-xs text-teal-100 flex items-center gap-1">
+                  <i class="fa-solid fa-clock"></i> Next 2-3 Hours Forecast Ready
+                </span>
+              </div>
+              <h2 class="text-xl sm:text-2xl font-bold font-brand tracking-tight mb-1">
+                Sigiriya Rock Peak Alert: 88% Capacity Surge Expected at 10:30 AM
+              </h2>
+              <p class="text-teal-100 text-xs sm:text-sm max-w-2xl mb-4 leading-relaxed">
+                LSTM Neural Model predicts heavy queues (55+ min wait) due to incoming tour coaches. We recommend shifting to <strong>Pidurangala Rock</strong> (8 mins away, 24% crowd, optimal 360° photo light) to save 1.5 hrs.
+              </p>
+              <div class="flex flex-wrap gap-2.5">
+                <button onclick="app.showAttractionModal('pidurangala')" class="px-4 py-2 bg-amber-400 hover:bg-amber-300 text-slate-900 text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-arrow-trend-down"></i> Take AI Route: Pidurangala
+                </button>
+                <button onclick="app.showAttractionModal('sigiriya')" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-xl backdrop-blur-sm border border-white/20 transition">
+                  Inspect Sigiriya Live Queue
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Strip -->
+          <div class="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/80 flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <div class="relative w-full sm:w-80">
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+              <input id="searchQuery" oninput="app.filterAttractions()" type="text" placeholder="Search Sigiriya, Ella, Galle, Yala, Kandy..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white text-slate-900" />
+            </div>
+
+            <!-- Category Pills -->
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+              <button onclick="app.setCategory('all')" class="cat-pill active px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-700 text-white shadow-sm whitespace-nowrap transition" data-cat="all">All Sights</button>
+              <button onclick="app.setCategory('cultural')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap transition" data-cat="cultural">Cultural Heritage</button>
+              <button onclick="app.setCategory('nature')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap transition" data-cat="nature">Nature & Hikes</button>
+              <button onclick="app.setCategory('beaches')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap transition" data-cat="beaches">Beaches & Surfing</button>
+              <button onclick="app.setCategory('wildlife')" class="cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap transition" data-cat="wildlife">Wildlife Safaris</button>
+            </div>
+          </div>
+
+          <!-- Tourist Attractions Grid -->
+          <div id="attractionsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            <!-- Rendered dynamically by JS -->
+          </div>
+        </section>
+
+        <!-- VIEW 2: INTERACTIVE LIVE MAP -->
+        <section id="view-map" class="hidden h-full flex flex-col space-y-3">
+          <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-800">
+              <i class="fa-solid fa-layer-group text-brand-700"></i>
+              <span>Live Density & Traffic Overlays:</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Low (&lt;40%)
+              </span>
+              <span class="flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span> Moderate (40-75%)
+              </span>
+              <span class="flex items-center gap-1 text-[11px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span> Critical Surge (&gt;75%)
+              </span>
+            </div>
+          </div>
+          
+          <div class="flex-1 bg-white rounded-3xl border border-slate-200 overflow-hidden relative shadow-inner min-h-[420px]">
+            <div id="mapContainer" class="w-full h-full"></div>
+          </div>
+        </section>
+
+        <!-- VIEW 3: ACCOMMODATIONS -->
+        <section id="view-stays" class="hidden space-y-5 max-w-6xl mx-auto">
+          <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 class="font-brand text-2xl font-bold text-slate-900">Sri Lanka Stays & Boutique Lodges</h2>
+                <p class="text-xs text-slate-500">Direct booking links via Booking.com, Agoda & Airbnb with live proximity & quietness ratings.</p>
+              </div>
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                <span class="px-2.5 py-1 bg-blue-50 text-blue-800 rounded-lg border border-blue-200">Booking.com</span>
+                <span class="px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200">Agoda</span>
+                <span class="px-2.5 py-1 bg-rose-50 text-rose-800 rounded-lg border border-rose-200">Airbnb</span>
+              </div>
+            </div>
+
+            <div id="staysGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 4: TRANSIT & TRANSPORT -->
+        <section id="view-transit" class="hidden space-y-5 max-w-6xl mx-auto">
+          <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div>
+                <h2 class="font-brand text-2xl font-bold text-slate-900">Multi-Modal Sri Lanka Transport & Ticketing</h2>
+                <p class="text-xs text-slate-500">Live RDMNS train schedules, Expressway buses, intercity coaches, PickMe tuk-tuks & domestic flights.</p>
+              </div>
+              <div class="flex gap-2">
+                <a href="https://rdmns.lk" target="_blank" class="px-3 py-1.5 bg-blue-50 text-blue-800 rounded-xl text-xs font-semibold hover:bg-blue-100 transition border border-blue-200">
+                  <i class="fa-solid fa-train"></i> RDMNS.lk Live
+                </a>
+                <a href="https://busseat.lk" target="_blank" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-semibold hover:bg-emerald-100 transition border border-emerald-200">
+                  <i class="fa-solid fa-bus"></i> BusSeat.lk
+                </a>
+                <a href="https://12go.asia/en/travel/sri-lanka" target="_blank" class="px-3 py-1.5 bg-amber-50 text-amber-800 rounded-xl text-xs font-semibold hover:bg-amber-100 transition border border-amber-200">
+                  <i class="fa-solid fa-ticket"></i> 12Go Asia
+                </a>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" id="transitList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 5: GEMINI AI TRAVEL CONCIERGE -->
+        <section id="view-ai-guide" class="hidden max-w-4xl mx-auto h-full flex flex-col bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden min-h-[500px]">
+          <div class="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-brand-700 text-white flex items-center justify-center shadow-md">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 text-sm">PathWise AI Concierge & Trip Planner</h3>
+                <p class="text-[11px] text-slate-500">Trained on Sri Lanka Tourism, live microclimates, and crowd data.</p>
+              </div>
+            </div>
+            <button onclick="app.clearAiChat()" class="text-xs text-slate-400 hover:text-slate-600 px-2 py-1">Clear</button>
+          </div>
+
+          <div id="aiChatBox" class="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs sm:text-sm">
+            <div class="flex gap-2.5 max-w-lg">
+              <div class="w-7 h-7 rounded-lg bg-brand-100 text-brand-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid fa-robot text-xs"></i>
+              </div>
+              <div class="bg-[#F8FAFC] border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm text-slate-800 leading-relaxed shadow-sm">
+                Ayubowan! 🙏 I'm your AI Travel Guide. I can help you plan scenic train routes (Kandy to Ella), find uncrowded photo spots, check Poya day guidelines, or arrange direct bus & hotel bookings. Where are you heading today?
+              </div>
+            </div>
+          </div>
+
+          <div class="px-4 py-2 bg-slate-50 border-t border-slate-100 flex items-center gap-2 overflow-x-auto text-[11px] scrollbar-none">
+            <button onclick="app.sendAiPreset('When is the least crowded time to visit Sigiriya Rock tomorrow?')" class="px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-brand-600 whitespace-nowrap shadow-2xs">⏰ Sigiriya Crowd Forecast</button>
+            <button onclick="app.sendAiPreset('How do I book 3rd class scenic train from Kandy to Ella on RDMNS?')" class="px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-brand-600 whitespace-nowrap shadow-2xs">🚆 Kandy-Ella Train Guide</button>
+            <button onclick="app.sendAiPreset('Is alcohol served on Poya full moon days in Sri Lanka?')" class="px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-brand-600 whitespace-nowrap shadow-2xs">🌕 Poya Day Rules</button>
+          </div>
+
+          <div class="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
+            <input id="aiInput" onkeydown="if(event.key==='Enter') app.sendAiMessage()" type="text" placeholder="Ask anything about Sri Lanka travel, weather, or crowd forecasts..." class="flex-1 px-4 py-3 bg-[#F8FAFC] border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:bg-white text-slate-900" />
+            <button onclick="app.sendAiMessage()" class="px-4 py-3 bg-brand-700 hover:bg-brand-800 text-white rounded-xl font-semibold text-xs transition shadow-md shadow-brand-700/20">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- VIEW 6: SRI LANKA HOLIDAYS & POYA CALENDAR -->
+        <section id="view-holidays" class="hidden space-y-5 max-w-5xl mx-auto">
+          <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div>
+                <h2 class="font-brand text-2xl font-bold text-slate-900">Sri Lanka Poya & Public Holidays 2026/2027</h2>
+                <p class="text-xs text-slate-500">Religious observances, full moon surges, national holidays and tourist advisory alerts.</p>
+              </div>
+              <span class="px-3 py-1 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 text-xs font-semibold">
+                <i class="fa-solid fa-moon text-indigo-600"></i> Full Moon Poya Tracker Active
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="holidayGrid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 7: SOCIAL MEDIA & COMMUNITY SPOTLIGHT -->
+        <section id="view-social" class="hidden space-y-5 max-w-5xl mx-auto">
+          <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+              <div>
+                <h2 class="font-brand text-2xl font-bold text-slate-900">Live Social & Traveler Buzz</h2>
+                <p class="text-xs text-slate-500">Instagram, TikTok & TripAdvisor real-time check-ins and photo conditions.</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="px-3 py-1.5 rounded-xl bg-pink-50 text-pink-700 border border-pink-200 text-xs font-semibold flex items-center gap-1">
+                  <i class="fa-brands fa-instagram"></i> #VisitSriLanka
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="socialGrid">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 8: ADMIN PORTAL & ANALYTICS STUDIO -->
+        <section id="view-admin" class="hidden space-y-5 max-w-6xl mx-auto">
+          <div class="bg-slate-900 text-white rounded-3xl p-6 shadow-xl border border-slate-800">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold uppercase tracking-wider">
+                    <i class="fa-solid fa-shield-halved"></i> Sri Lanka Tourism Telematics
+                  </span>
+                  <span class="text-xs text-slate-400">Admin Control Center</span>
+                </div>
+                <h2 class="text-2xl font-bold font-brand tracking-tight">Island-Wide Crowd & Surge Management</h2>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="app.triggerEmergencyNudge()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                  <i class="fa-solid fa-bullhorn"></i> Broadcast AI Nudge
+                </button>
+                <button onclick="app.resetAdminSimulations()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-700">
+                  <i class="fa-solid fa-rotate-right"></i> Reset Sim
+                </button>
+              </div>
+            </div>
+
+            <!-- KPI Metric Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5">
+                <div class="text-slate-400 text-xs font-medium mb-1">Active App Users</div>
+                <div class="text-2xl font-bold text-white tracking-tight" id="adminUsersCount">14,820</div>
+                <div class="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
+                  <i class="fa-solid fa-arrow-trend-up"></i> +18.4% vs last week
+                </div>
+              </div>
+
+              <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5">
+                <div class="text-slate-400 text-xs font-medium mb-1">Surge Alleviated</div>
+                <div class="text-2xl font-bold text-amber-400 tracking-tight" id="adminSurgeMitigated">38.2%</div>
+                <div class="text-[10px] text-amber-300 mt-1">Via AI dynamic rerouting</div>
+              </div>
+
+              <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5">
+                <div class="text-slate-400 text-xs font-medium mb-1">Avg Tourist Time Saved</div>
+                <div class="text-2xl font-bold text-brand-300 tracking-tight">48 min</div>
+                <div class="text-[10px] text-brand-200 mt-1">Reduced queue dwell</div>
+              </div>
+
+              <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5">
+                <div class="text-slate-400 text-xs font-medium mb-1">Transit Bookings (24h)</div>
+                <div class="text-2xl font-bold text-indigo-300 tracking-tight">3,490</div>
+                <div class="text-[10px] text-indigo-200 mt-1">RDMNS & BusSeat routes</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Telematics Chart & Simulation Sliders -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-sm">Real-Time vs Predicted Crowd Volume (LSTM Model)</h3>
+                  <p class="text-xs text-slate-500">Historical calibration against sensor gateways across 12 key cultural hubs.</p>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg">96.4% Accuracy</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="adminTelemetryChart"></canvas>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+              <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-brand-700"></i>
+                <span>Surge Stress Simulator</span>
+              </h3>
+              
+              <div>
+                <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                  <span>Simulate Rain / Monsoon Surge:</span>
+                  <span id="rainVal" class="text-brand-700 font-bold">None (Clear)</span>
+                </div>
+                <input id="rainSlider" oninput="app.simulateRain(this.value)" type="range" min="0" max="100" value="0" class="w-full accent-brand-700" />
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                  <span>Simulate Poya Holiday Surge:</span>
+                  <span id="poyaVal" class="text-indigo-700 font-bold">+0% (Normal)</span>
+                </div>
+                <input id="poyaSlider" oninput="app.simulatePoya(this.value)" type="range" min="0" max="100" value="0" class="w-full accent-indigo-600" />
+              </div>
+
+              <div class="pt-2 border-t border-slate-100">
+                <div class="text-xs font-semibold text-slate-800 mb-2">Manual Attraction Capacity Cap:</div>
+                <select id="adminCapSelect" onchange="app.changeAttractionCap(this.value)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none">
+                  <option value="sigiriya">Sigiriya Fortress (Current: 88%)</option>
+                  <option value="temple_tooth">Temple of the Tooth, Kandy (Current: 76%)</option>
+                  <option value="nine_arch">Nine Arch Bridge, Ella (Current: 82%)</option>
+                  <option value="galle_fort">Galle Dutch Fort (Current: 45%)</option>
+                  <option value="yala">Yala Safari Block 1 (Current: 92%)</option>
+                </select>
+                <button onclick="app.throttleSelectedAttraction()" class="mt-2 w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition">
+                  Activate Gate Quota & Throttle
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION -->
+    <nav class="md:hidden glass-nav border-t border-slate-200/80 px-3 py-2 flex items-center justify-around z-30 flex-shrink-0">
+      <button onclick="app.navigate('explore')" class="mobile-nav-btn active flex flex-col items-center gap-0.5 text-brand-700" data-view="explore">
+        <i class="fa-solid fa-compass text-base"></i>
+        <span class="text-[10px] font-semibold">Explore</span>
+      </button>
+
+      <button onclick="app.navigate('map')" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-700" data-view="map">
+        <i class="fa-solid fa-map-location-dot text-base"></i>
+        <span class="text-[10px] font-semibold">Live Map</span>
+      </button>
+
+      <button onclick="app.navigate('transit')" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-700" data-view="transit">
+        <i class="fa-solid fa-train text-base"></i>
+        <span class="text-[10px] font-semibold">Transit</span>
+      </button>
+
+      <button onclick="app.navigate('stays')" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-700" data-view="stays">
+        <i class="fa-solid fa-hotel text-base"></i>
+        <span class="text-[10px] font-semibold">Stays</span>
+      </button>
+
+      <button onclick="app.navigate('ai-guide')" class="mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-700" data-view="ai-guide">
+        <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+        <span class="text-[10px] font-semibold">AI Guide</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ATTRACTION DETAIL & 2-3 HOUR PREDICTION MODAL -->
+  <div id="attractionModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-scale-up">
+      <div id="modalBanner" class="relative h-48 sm:h-56 bg-slate-900 text-white p-6 flex flex-col justify-between overflow-hidden">
+        <div class="absolute inset-0 bg-cover bg-center opacity-40" id="modalBgImage"></div>
+        <div class="relative z-10 flex justify-between items-start">
+          <span id="modalCategoryBadge" class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold">Category</span>
+          <button onclick="app.closeAttractionModal()" class="w-8 h-8 rounded-full bg-black/40 text-white hover:bg-black/60 flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+        <div class="relative z-10">
+          <h2 id="modalTitle" class="text-2xl sm:text-3xl font-brand font-bold">Attraction Name</h2>
+          <p id="modalLocation" class="text-xs text-slate-200 flex items-center gap-1 mt-0.5">
+            <i class="fa-solid fa-location-dot"></i> Central Province, Sri Lanka
+          </p>
+        </div>
+      </div>
+
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-2xl text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-400">Live Crowd</span>
+            <div id="modalCrowdLevel" class="text-xl font-bold text-brand-700 mt-0.5">88%</div>
+            <span id="modalCrowdTag" class="text-[10px] font-semibold text-rose-600">Heavy Queue</span>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-2xl text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-400">Est. Wait</span>
+            <div id="modalWaitTime" class="text-xl font-bold text-slate-900 mt-0.5">50 min</div>
+            <span class="text-[10px] text-slate-500">Ticket & Entry Gate</span>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-2xl text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-400">Climate</span>
+            <div id="modalClimate" class="text-xl font-bold text-amber-600 mt-0.5">31°C</div>
+            <span class="text-[10px] text-slate-500">Sunny · UV 8.2</span>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 p-3 rounded-2xl text-center">
+            <span class="text-[10px] uppercase font-bold text-slate-400">Optimal Window</span>
+            <div id="modalOptimalWindow" class="text-sm font-bold text-emerald-700 mt-1">2:45 PM</div>
+            <span class="text-[10px] text-emerald-600">Crowd drops 40%</span>
+          </div>
+        </div>
+
+        <div class="bg-[#F8FAFC] border border-slate-200/80 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-chart-line text-brand-700"></i> Next 2-3 Hours Predictive Crowd Curve
+            </div>
+            <span class="text-[10px] text-slate-400">LSTM Neural Model · 10 min refresh</span>
+          </div>
+          <div class="h-44 relative">
+            <canvas id="modalForecastChart"></canvas>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider mb-1.5">Overview & Practical Tips</h4>
+          <p id="modalDescription" class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Detailed guide description will render here.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex flex-wrap gap-2.5 items-center justify-between">
+          <div class="flex gap-2">
+            <a id="modalGoogleMapsLink" href="https://maps.google.com" target="_blank" class="px-4 py-2.5 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-brand-700/20 transition">
+              <i class="fa-brands fa-google"></i> Open in Google Maps
+            </a>
+            <a id="modalWhatsAppShare" href="#" target="_blank" class="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+              <i class="fa-brands fa-whatsapp text-emerald-600"></i> Share Trip
+            </a>
+          </div>
+          <button onclick="app.closeAttractionModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition">
+            Close
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SRI_LANKA_ATTRACTIONS = [
+      {
+        id: 'sigiriya',
+        name: 'Sigiriya Rock Fortress',
+        category: 'cultural',
+        location: 'Matale District, Central Province',
+        lat: 7.9570,
+        lng: 80.7603,
+        crowd: 88,
+        waitTime: '55 min',
+        climate: '31°C · Sunny',
+        optimal: '3:00 PM',
+        forecast: [75, 88, 92, 85, 62, 45],
+        forecastLabels: ['Now', '+30m', '+1h', '+1.5h', '+2h', '+3h'],
+        image: 'https://images.unsplash.com/photo-1588598198321-9735fd52455b?auto=format&fit=crop&w=800&q=80',
+        description: 'Ancient 5th-century palace fortress perched on a 200m granite monolith. Famous for mirror wall inscriptions and vibrant frescoes. Heavy morning queues occur between 9:00 AM - 11:30 AM.'
+      },
+      {
+        id: 'pidurangala',
+        name: 'Pidurangala Rock',
+        category: 'nature',
+        location: 'Sigiriya, Central Province',
+        lat: 7.9673,
+        lng: 80.7632,
+        crowd: 28,
+        waitTime: '5 min',
+        climate: '30°C · Gentle Breeze',
+        optimal: 'Now',
+        forecast: [28, 30, 35, 42, 38, 30],
+        forecastLabels: ['Now', '+30m', '+1h', '+1.5h', '+2h', '+3h'],
+        image: 'https://images.unsplash.com/photo-1546708973-b339540b5162?auto=format&fit=crop&w=800&q=80',
+        description: 'Serene companion rock offering the most iconic panoramic 360-degree vantage point directly facing Sigiriya Fortress. Minimal queues, lower entry fee (approx 1,000 LKR).'
+      },
+      {
+        id: 'nine_arch',
+        name: 'Nine Arch Bridge, Ella',
+        category: 'nature',
+        location: 'Ella, Uva Province',
+        lat: 6.8768,
+        lng: 81.0608,
+        crowd: 82,
+        waitTime: '20 min photo spot',
+        climate: '24°C · Misty',
+        optimal: '11:45 AM (Next Train pass)',
+        forecast: [82, 88, 70, 55, 60, 78],
+        forecastLabels: ['Now', '+30m', '+1h', '+1.5h', '+2h', '+3h'],
+        image: 'https://images.unsplash.com/photo-1586861635167-e5223aadc9fe?auto=format&fit=crop&w=800&q=80',
+        description: 'Colonial viaduct bridge nestled inside lush tea hills between Ella and Demodara stations. Built purely of solid rock, bricks, and cement without steel.'
+      },
+      {
+        id: 'temple_tooth',
+        name: 'Temple of the Sacred Tooth Relic (Sri Dalada Maligawa)',
+        category: 'cultural',
+        location: 'Kandy, Central Province',
+        lat: 7.2936,
+        lng: 80.6413,
+        crowd: 76,
+        waitTime: '40 min',
+        climate: '26°C · Overcast',
+        optimal: '5:30 PM (Evening Puja)',
+        forecast: [76, 80, 85, 78, 65, 58],
+        forecastLabels: ['Now', '+30m', '+1h', '+1.5h', '+2h', '+3h'],
+        image: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=800&q=80',
+        description: 'Venerated Buddhist shrine housing the relic of the tooth of Buddha. Strict dress code: shoulders and knees must be covered.'
+      },
+      {
+        id: 'galle_fort',
+        name: 'Galle Dutch Fort',
+        category: 'cultural',
+        location: 'Galle, Southern Province',
+        lat: 6.0300,
+        lng: 80.2170,
+        crowd: 45,
+        waitTime: '0 min (Open access)',
+        climate: '29°C · Ocean Breeze',
+        optimal: '4:30 PM (Sunset Walk)',
+        forecast: [45, 50, 62, 70, 65, 48],
+        forecastLabels: ['Now', '+30m', '+1h', '+1.5h', '+2h', '+3h'],
+        image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?auto=format&fit=crop&w=800&q=80',
+        description: '16th-century Portuguese and Dutch coastal fortification featuring boutique cafes, lighthouses, gem museums, and cobblestone alleyways.'
+      },
+      {
+        id: 'yala_safari',
+        name: 'Yala National Park (Block 1)',
+        category: 'wildlife',
+        location: 'Southern & Uva Provinces',
+        lat: 6.3688,
+        lng: 81.5270,
+        crowd: 91,
+        waitTime: '45 min Jeep queue',
+        climate: '33°C · Dry Zone',
+        optimal: '2:30 PM (Afternoon Gate)',
+        forecast: [91, 85, 70, 88, 92, 60],
+        forecastLabels: ['Now', '+30m', '+1h', '+1.5h', '+2h', '+3h'],
+        image: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80',
+        description: 'World’s highest leopard density per square kilometer. High safari jeep congestion occurs at the Palatupana entrance gate during early mornings.'
+      },
+      {
+        id: 'mirissa_beach',
+        name: 'Mirissa Beach & Coconut Tree Hill',
+        category: 'beaches',
+        location: 'Mirissa, Southern Province',
+        lat: 5.9482,
+        lng: 80.4578,
+        crowd: 58,
+        waitTime: '10 min',
+        climate: '29°C · Tropical',
+        optimal: '5:00 PM',
+        forecast: [58, 64, 75, 82, 68, 50],
+        forecastLabels: ['Now', '+30m', '+1h', '+1.5h', '+2h', '+3h'],
+        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+        description: 'Famous crescent beach for whale watching excursions, surfing, and the palm tree promontory lookout.'
+      }
+    ];
+
+    const SRI_LANKA_STAYS = [
+      {
+        name: 'Heritance Kandalama',
+        region: 'Dambulla / Sigiriya',
+        type: '5★ Eco-Luxury Resort',
+        price: '$190 / night',
+        rating: '4.9',
+        crowdFactor: 'Quiet Jungle Sanctuary',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80',
+        bookingUrl: 'https://www.booking.com/searchresults.html?ss=Heritance+Kandalama'
+      },
+      {
+        name: '98 Acres Resort & Spa',
+        region: 'Ella, Uva Province',
+        type: 'Luxury Tea Chalets',
+        price: '$240 / night',
+        rating: '4.9',
+        crowdFactor: 'Private Hillside',
+        image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
+        bookingUrl: 'https://www.booking.com/searchresults.html?ss=98+Acres+Resort'
+      },
+      {
+        name: 'Amangalla Heritage Villa',
+        region: 'Galle Fort',
+        type: 'Colonial Historic Boutique',
+        price: '$380 / night',
+        rating: '4.8',
+        crowdFactor: 'Inside Quiet Fort Quarters',
+        image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=600&q=80',
+        bookingUrl: 'https://www.booking.com/searchresults.html?ss=Amangalla+Galle'
+      },
+      {
+        name: 'Cinnamon Wild Yala',
+        region: 'Yala Buffer Zone',
+        type: 'Wildlife Safari Lodge',
+        price: '$165 / night',
+        rating: '4.7',
+        crowdFactor: 'Immediate Park Access',
+        image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=600&q=80',
+        bookingUrl: 'https://www.booking.com/searchresults.html?ss=Cinnamon+Wild+Yala'
+      }
+    ];
+
+    const SRI_LANKA_TRANSIT = [
+      {
+        origin: 'Colombo Fort',
+        destination: 'Kandy (Intercity Express Train)',
+        operator: 'Sri Lanka Railways (RDMNS)',
+        duration: '2h 30m',
+        fare: 'LKR 800 - 2,000 (~$3-$7)',
+        status: 'On Time · 100% Reserved (AC Car)',
+        icon: 'fa-train',
+        link: 'https://rdmns.lk'
+      },
+      {
+        origin: 'Kandy',
+        destination: 'Ella (Scenic Blue Tea Train)',
+        operator: 'Sri Lanka Railways (RDMNS)',
+        duration: '6h 15m',
+        fare: 'LKR 1,200 - 3,500',
+        status: 'High Demand · Book 30 days ahead or grab 3rd class unreserved',
+        icon: 'fa-mountain',
+        link: 'https://12go.asia/en/travel/kandy/ella'
+      },
+      {
+        origin: 'Colombo (Makumbura)',
+        destination: 'Galle (Southern Expressway AC Bus)',
+        operator: 'BusSeat.lk / SLTB Luxury',
+        duration: '1h 15m',
+        fare: 'LKR 950 (~$3)',
+        status: 'Departs Every 20 Mins · No Congestion',
+        icon: 'fa-bus',
+        link: 'https://busseat.lk'
+      },
+      {
+        origin: 'Bandaranaike Intl (CMB)',
+        destination: 'Koggala / Castlereagh (Domestic Seaplane)',
+        operator: 'Cinnamon Air',
+        duration: '35 mins',
+        fare: '$180 - $260',
+        status: 'Daily Flights Scheduled',
+        icon: 'fa-plane',
+        link: 'https://www.cinnamonair.com'
+      }
+    ];
+
+    const SRI_LANKA_HOLIDAYS = [
+      {
+        title: 'Medin Full Moon Poya Day',
+        date: 'March 2026',
+        type: 'Religious Full Moon (Poya)',
+        crowdImpact: 'Very High at Temples & Cultural Triangle',
+        rules: 'Alcohol sales and meat slaughter prohibited nationwide. Cultural dress required.'
+      },
+      {
+        title: 'Sinhala & Tamil New Year (Aluth Avurudda)',
+        date: 'April 13 - 14, 2026',
+        type: 'National Cultural Holiday',
+        crowdImpact: 'High Expressway Traffic from Colombo to Villages',
+        rules: 'Shops and public transport operate on holiday schedules.'
+      },
+      {
+        title: 'Vesak Full Moon Poya Day (Festival of Lights)',
+        date: 'May 2026',
+        type: 'Major Buddhist Festival',
+        crowdImpact: 'Massive Evening Lantern Displays in Colombo & Kandy',
+        rules: 'Free food stalls (Dansalas) along all major roads across the island.'
+      },
+      {
+        title: 'Kandy Esala Perahera Festival',
+        date: 'August 2026',
+        type: 'Grand Cultural Pageant',
+        crowdImpact: 'Max Capacity in Kandy City Center',
+        rules: 'Book seats 2-3 months early. Elevated police checkpoints.'
+      }
+    ];
+
+    const SOCIAL_FEED = [
+      {
+        user: '@wanderlust_elena',
+        location: 'Nine Arch Bridge, Ella',
+        time: '18 mins ago',
+        text: 'Just caught the 11:30 blue train rolling over the bridge! Followed PathWise AI nudge to hike the lower path—zero crowd!',
+        likes: '342',
+        tag: '#EllaSriLanka'
+      },
+      {
+        user: '@toursrilanka_mark',
+        location: 'Pidurangala Summit',
+        time: '42 mins ago',
+        text: 'Morning sunrise hitting Sigiriya is unreal. Skip the fortress morning queue and come up here first. 10/10.',
+        likes: '891',
+        tag: '#PidurangalaRock'
+      },
+      {
+        user: '@surfsouth_srilanka',
+        location: 'Mirissa Bay',
+        time: '1 hour ago',
+        text: 'Waves are glassy 3-4ft. Beach restaurants have cold king coconuts ready. Low crowd till sunset.',
+        likes: '215',
+        tag: '#MirissaSurfing'
+      }
+    ];
+
+    const app = {
+      role: 'tourist',
+      currentView: 'explore',
+      category: 'all',
+      searchQuery: '',
+      map: null,
+      mapMarkers: [],
+      modalChart: null,
+      adminChart: null,
+
+      init() {
+        this.renderAttractions();
+        this.renderStays();
+        this.renderTransit();
+        this.renderHolidays();
+        this.renderSocial();
+      },
+
+      login(role = 'tourist') {
+        this.role = role;
+        document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        this.updateRoleUI();
+        if (role === 'admin') {
+          this.navigate('admin');
+        } else {
+          this.navigate('explore');
+        }
+      },
+
+      logout() {
+        document.getElementById('mainApp').classList.add('hidden');
+        document.getElementById('authScreen').classList.remove('hidden');
+      },
+
+      toggleRole() {
+        this.role = (this.role === 'tourist') ? 'admin' : 'tourist';
+        this.updateRoleUI();
+        if (this.role === 'admin') {
+          this.navigate('admin');
+        } else {
+          this.navigate('explore');
+        }
+      },
+
+      updateRoleUI() {
+        const badge = document.getElementById('roleBadge');
+        const adminNav = document.getElementById('adminNavGroup');
+        const toggleLabel = document.getElementById('toggleRoleLabel');
+
+        if (this.role === 'admin') {
+          badge.textContent = 'Admin Portal';
+          badge.className = 'text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 tracking-wider';
+          adminNav.classList.remove('hidden');
+          toggleLabel.textContent = 'Tourist App';
+        } else {
+          badge.textContent = 'Tourist Guide';
+          badge.className = 'text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-800 tracking-wider';
+          adminNav.classList.add('hidden');
+          toggleLabel.textContent = 'Admin Portal';
+        }
+      },
+
+      navigate(viewId) {
+        this.currentView = viewId;
+        const views = ['explore', 'map', 'stays', 'transit', 'ai-guide', 'holidays', 'social', 'admin'];
+        views.forEach(v => {
+          const el = document.getElementById(`view-${v}`);
+          if (el) el.classList.add('hidden');
+        });
+
+        const target = document.getElementById(`view-${viewId}`);
+        if (target) target.classList.remove('hidden');
+
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+          if (tab.getAttribute('data-view') === viewId) {
+            tab.className = 'nav-tab active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold bg-brand-50 text-brand-800 transition shadow-2xs';
+          } else {
+            tab.className = 'nav-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition';
+          }
+        });
+
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+          if (btn.getAttribute('data-view') === viewId) {
+            btn.className = 'mobile-nav-btn active flex flex-col items-center gap-0.5 text-brand-700';
+          } else {
+            btn.className = 'mobile-nav-btn flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-700';
+          }
+        });
+
+        if (viewId === 'map') {
+          setTimeout(() => this.initMap(), 100);
+        } else if (viewId === 'admin') {
+          setTimeout(() => this.initAdminChart(), 100);
+        }
+      },
+
+      setCategory(cat) {
+        this.category = cat;
+        document.querySelectorAll('.cat-pill').forEach(pill => {
+          if (pill.getAttribute('data-cat') === cat) {
+            pill.className = 'cat-pill active px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-700 text-white shadow-sm whitespace-nowrap transition';
+          } else {
+            pill.className = 'cat-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap transition';
+          }
+        });
+        this.renderAttractions();
+      },
+
+      filterAttractions() {
+        this.searchQuery = document.getElementById('searchQuery').value.toLowerCase();
+        this.renderAttractions();
+      },
+
+      renderAttractions() {
+        const grid = document.getElementById('attractionsGrid');
+        if (!grid) return;
+
+        const filtered = SRI_LANKA_ATTRACTIONS.filter(item => {
+          const matchCat = (this.category === 'all' || item.category === this.category);
+          const matchSearch = (
+            item.name.toLowerCase().includes(this.searchQuery) ||
+            item.location.toLowerCase().includes(this.searchQuery) ||
+            item.description.toLowerCase().includes(this.searchQuery)
+          );
+          return matchCat && matchSearch;
+        });
+
+        grid.innerHTML = filtered.map(item => {
+          let crowdBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+          let crowdText = 'Low Crowd';
+          if (item.crowd > 75) {
+            crowdBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+            crowdText = 'Heavy Queue Surge';
+          } else if (item.crowd > 40) {
+            crowdBadgeClass = 'bg-amber-50 text-amber-800 border-amber-200';
+            crowdText = 'Moderate Density';
+          }
+
+          return `
+            <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col group">
+              <div class="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onclick="app.showAttractionModal('${item.id}')">
+                <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+                <div class="absolute top-3 left-3">
+                  <span class="px-2.5 py-1 rounded-full text-[11px] font-bold border backdrop-blur-md ${crowdBadgeClass} shadow-sm">
+                    ${item.crowd}% Density · ${crowdText}
+                  </span>
+                </div>
+                <div class="absolute bottom-3 right-3">
+                  <span class="px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold flex items-center gap-1">
+                    <i class="fa-solid fa-clock"></i> ${item.waitTime}
+                  </span>
+                </div>
+              </div>
+
+              <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                    <span class="capitalize font-semibold text-brand-700">${item.category}</span>
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-cloud-sun text-amber-500"></i> ${item.climate}</span>
+                  </div>
+                  <h3 class="font-brand font-bold text-lg text-slate-900 leading-snug cursor-pointer hover:text-brand-700 transition" onclick="app.showAttractionModal('${item.id}')">
+                    ${item.name}
+                  </h3>
+                  <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5 mb-2.5">
+                    <i class="fa-solid fa-location-dot text-slate-400"></i> ${item.location}
+                  </p>
+                  <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                    ${item.description}
+                  </p>
+                </div>
+
+                <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div class="text-[11px] text-slate-500">
+                    Optimal: <strong class="text-slate-800">${item.optimal}</strong>
+                  </div>
+                  <button onclick="app.showAttractionModal('${item.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-brand-700 hover:text-white text-slate-700 text-xs font-semibold transition flex items-center gap-1">
+                    <span>Forecast & Guide</span>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      },
+
+      showAttractionModal(id) {
+        const item = SRI_LANKA_ATTRACTIONS.find(a => a.id === id);
+        if (!item) return;
+
+        document.getElementById('modalTitle').textContent = item.name;
+        document.getElementById('modalLocation').innerHTML = `<i class="fa-solid fa-location-dot"></i> ${item.location}`;
+        document.getElementById('modalCategoryBadge').textContent = item.category.toUpperCase();
+        document.getElementById('modalBgImage').style.backgroundImage = `url('${item.image}')`;
+        document.getElementById('modalCrowdLevel').textContent = `${item.crowd}%`;
+        document.getElementById('modalWaitTime').textContent = item.waitTime;
+        document.getElementById('modalClimate').textContent = item.climate;
+        document.getElementById('modalOptimalWindow').textContent = item.optimal;
+        document.getElementById('modalDescription').textContent = item.description;
+
+        document.getElementById('modalGoogleMapsLink').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + ' Sri Lanka')}`;
+        const shareMsg = `Check out ${item.name} on PathWise! Live crowd is ${item.crowd}% with optimal visit window at ${item.optimal}.`;
+        document.getElementById('modalWhatsAppShare').href = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
+
+        const modal = document.getElementById('attractionModal');
+        modal.classList.remove('hidden');
+
+        setTimeout(() => {
+          const ctx = document.getElementById('modalForecastChart').getContext('2d');
+          if (this.modalChart) this.modalChart.destroy();
+
+          this.modalChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: item.forecastLabels,
+              datasets: [{
+                label: 'Predicted Crowd Density (%)',
+                data: item.forecast,
+                borderColor: '#0D9488',
+                backgroundColor: 'rgba(13, 148, 136, 0.12)',
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#0F766E',
+                pointRadius: 4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                y: { min: 0, max: 100, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
+              }
+            }
+          });
+        }, 50);
+      },
+
+      closeAttractionModal() {
+        document.getElementById('attractionModal').classList.add('hidden');
+      },
+
+      initMap() {
+        if (this.map) {
+          this.map.invalidateSize();
+          return;
+        }
+
+        this.map = L.map('mapContainer').setView([7.8731, 80.7718], 8);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '© OpenStreetMap contributors | PathWise AI'
+        }).addTo(this.map);
+
+        SRI_LANKA_ATTRACTIONS.forEach(item => {
+          let color = '#10B981';
+          if (item.crowd > 75) color = '#F43F5E';
+          else if (item.crowd > 40) color = '#F59E0B';
+
+          const marker = L.circleMarker([item.lat, item.lng], {
+            radius: 10,
+            fillColor: color,
+            color: '#FFFFFF',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.85
+          }).addTo(this.map);
+
+          marker.bindPopup(`
+            <div class="p-2 text-slate-800 text-xs">
+              <strong class="font-bold text-sm text-slate-900 block mb-1">${item.name}</strong>
+              <div class="text-[11px] text-slate-500 mb-1.5"><i class="fa-solid fa-location-dot text-brand-700"></i> ${item.location}</div>
+              <div class="flex items-center justify-between bg-slate-50 p-1.5 rounded-lg border mb-2">
+                <span>Density: <strong>${item.crowd}%</strong></span>
+                <span>Wait: <strong>${item.waitTime}</strong></span>
+              </div>
+              <button onclick="app.showAttractionModal('${item.id}')" class="w-full py-1 bg-teal-700 text-white rounded text-center font-semibold text-[11px]">
+                View 2-Hour Prediction
+              </button>
+            </div>
+          `);
+
+          this.mapMarkers.push(marker);
+        });
+      },
+
+      renderStays() {
+        const grid = document.getElementById('staysGrid');
+        if (!grid) return;
+        grid.innerHTML = SRI_LANKA_STAYS.map(stay => `
+          <div class="bg-[#F8FAFC] border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition flex flex-col">
+            <div class="h-40 bg-slate-200 overflow-hidden relative">
+              <img src="${stay.image}" alt="${stay.name}" class="w-full h-full object-cover" loading="lazy" />
+              <span class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white text-[10px] font-bold">
+                ⭐ ${stay.rating}
+              </span>
+            </div>
+            <div class="p-4 flex-1 flex flex-col justify-between">
+              <div>
+                <div class="text-[10px] text-brand-700 font-bold uppercase tracking-wider">${stay.type}</div>
+                <h4 class="font-brand font-bold text-base text-slate-900 mt-0.5">${stay.name}</h4>
+                <p class="text-xs text-slate-500 mb-2"><i class="fa-solid fa-location-dot"></i> ${stay.region}</p>
+                <div class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg inline-block mb-3">
+                  <i class="fa-solid fa-shield-heart"></i> ${stay.crowdFactor}
+                </div>
+              </div>
+              <div class="pt-3 border-t border-slate-200/80 flex items-center justify-between">
+                <span class="font-bold text-slate-900 text-sm">${stay.price}</span>
+                <a href="${stay.bookingUrl}" target="_blank" class="px-3.5 py-1.5 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-semibold transition">
+                  Book Stay
+                </a>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      },
+
+      renderTransit() {
+        const list = document.getElementById('transitList');
+        if (!list) return;
+        list.innerHTML = SRI_LANKA_TRANSIT.map(t => `
+          <div class="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-4 flex items-start gap-3.5 hover:bg-white hover:shadow-sm transition">
+            <div class="w-11 h-11 rounded-2xl bg-brand-100 text-brand-800 flex items-center justify-center flex-shrink-0 text-base shadow-2xs">
+              <i class="fa-solid ${t.icon}"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <h4 class="font-bold text-slate-900 text-sm">${t.origin} ➔ ${t.destination}</h4>
+                <span class="text-xs font-bold text-brand-700">${t.fare}</span>
+              </div>
+              <div class="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                <span><i class="fa-solid fa-building-flag"></i> ${t.operator}</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-hourglass-half"></i> ${t.duration}</span>
+              </div>
+              <div class="mt-2 text-xs text-slate-600 bg-white border border-slate-200 p-2 rounded-xl flex items-center justify-between">
+                <span class="truncate pr-2">${t.status}</span>
+                <a href="${t.link}" target="_blank" class="text-brand-700 font-bold hover:underline whitespace-nowrap flex items-center gap-1">
+                  Book Live <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      },
+
+      renderHolidays() {
+        const grid = document.getElementById('holidayGrid');
+        if (!grid) return;
+        grid.innerHTML = SRI_LANKA_HOLIDAYS.map(h => `
+          <div class="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-indigo-700 uppercase tracking-wider">${h.type}</span>
+              <span class="text-xs font-semibold text-slate-500">${h.date}</span>
+            </div>
+            <h4 class="font-bold text-slate-900 text-sm mb-1">${h.title}</h4>
+            <div class="text-xs text-amber-800 bg-amber-50 border border-amber-200 p-2 rounded-xl mb-2">
+              <strong>Crowd Impact:</strong> ${h.crowdImpact}
+            </div>
+            <p class="text-xs text-slate-600">${h.rules}</p>
+          </div>
+        `).join('');
+      },
+
+      openHolidaysModal() {
+        this.navigate('holidays');
+      },
+
+      renderSocial() {
+        const grid = document.getElementById('socialGrid');
+        if (!grid) return;
+        grid.innerHTML = SOCIAL_FEED.map(s => `
+          <div class="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-4 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between text-xs mb-2">
+                <span class="font-bold text-slate-800">${s.user}</span>
+                <span class="text-slate-400">${s.time}</span>
+              </div>
+              <div class="text-xs text-brand-700 font-semibold mb-2"><i class="fa-solid fa-location-dot"></i> ${s.location}</div>
+              <p class="text-xs text-slate-700 leading-relaxed">${s.text}</p>
+            </div>
+            <div class="pt-3 mt-3 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500">
+              <span class="text-pink-600 font-semibold">${s.tag}</span>
+              <span><i class="fa-solid fa-heart text-rose-500"></i> ${s.likes}</span>
+            </div>
+          </div>
+        `).join('');
+      },
+
+      sendAiMessage() {
+        const input = document.getElementById('aiInput');
+        const text = input.value.trim();
+        if (!text) return;
+        this.appendAiUserMessage(text);
+        input.value = '';
+
+        setTimeout(() => {
+          this.generateAiResponse(text);
+        }, 600);
+      },
+
+      sendAiPreset(query) {
+        this.appendAiUserMessage(query);
+        setTimeout(() => {
+          this.generateAiResponse(query);
+        }, 500);
+      },
+
+      appendAiUserMessage(msg) {
+        const box = document.getElementById('aiChatBox');
+        box.innerHTML += `
+          <div class="flex justify-end">
+            <div class="bg-brand-700 text-white p-3.5 rounded-2xl rounded-tr-sm max-w-lg leading-relaxed shadow-sm">
+              ${msg}
+            </div>
+          </div>
+        `;
+        box.scrollTop = box.scrollHeight;
+      },
+
+      generateAiResponse(prompt) {
+        const box = document.getElementById('aiChatBox');
+        let answer = "Sri Lanka's peak season runs from December to April on the South/West coast and May to September on the East coast. For the best crowd avoidance, book your Kandy-Ella scenic train seats 30 days prior on the RDMNS portal or catch the 7:45 AM expressway bus from Makumbura Multimodal Center.";
+        
+        const lower = prompt.toLowerCase();
+        if (lower.includes('sigiriya') || lower.includes('least crowded')) {
+          answer = "According to our real-time LSTM model, Sigiriya peaks between 9:00 AM and 11:30 AM with up to 88% capacity. The best window is at 6:45 AM right at gate opening, or at 3:15 PM when afternoon coach groups disperse and temperature drops to 28°C.";
+        } else if (lower.includes('poya') || lower.includes('alcohol')) {
+          answer = "On Full Moon Poya days in Sri Lanka, the sale of alcoholic beverages and fresh meat is prohibited by law across all restaurants and bars. Cultural sites and temples will experience very high local pilgrim attendance. Please wear white or modest attire covering knees and shoulders.";
+        } else if (lower.includes('train') || lower.includes('ella') || lower.includes('rdmns')) {
+          answer = "For the iconic Kandy to Ella train, 1st class AC and 2nd class reserved seats sell out rapidly on the official Sri Lanka Railways website (rdmns.lk or 12Go). If sold out, purchase an unreserved 3rd class ticket at Kandy Fort station 45 mins before departure (approx 600 LKR) and enter through the right-side doors for the best hillside views.";
+        }
+
+        box.innerHTML += `
+          <div class="flex gap-2.5 max-w-lg">
+            <div class="w-7 h-7 rounded-lg bg-brand-100 text-brand-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <i class="fa-solid fa-robot text-xs"></i>
+            </div>
+            <div class="bg-[#F8FAFC] border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm text-slate-800 leading-relaxed shadow-sm">
+              ${answer}
+            </div>
+          </div>
+        `;
+        box.scrollTop = box.scrollHeight;
+      },
+
+      clearAiChat() {
+        const box = document.getElementById('aiChatBox');
+        box.innerHTML = `
+          <div class="flex gap-2.5 max-w-lg">
+            <div class="w-7 h-7 rounded-lg bg-brand-100 text-brand-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <i class="fa-solid fa-robot text-xs"></i>
+            </div>
+            <div class="bg-[#F8FAFC] border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm text-slate-800 leading-relaxed shadow-sm">
+              Chat cleared. How can I assist your Sri Lanka travels today?
+            </div>
+          </div>
+        `;
+      },
+
+      initAdminChart() {
+        const canvas = document.getElementById('adminTelemetryChart');
+        if (!canvas) return;
+        if (this.adminChart) this.adminChart.destroy();
+
+        const ctx = canvas.getContext('2d');
+        this.adminChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+            datasets: [
+              {
+                label: 'Actual Sensor Gateway Dwell',
+                data: [18, 42, 88, 76, 68, 85, 40, 20],
+                borderColor: '#F59E0B',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.3
+              },
+              {
+                label: 'AI LSTM Predicted Baseline',
+                data: [20, 45, 84, 72, 65, 82, 42, 18],
+                borderColor: '#0D9488',
+                borderDash: [5, 5],
+                tension: 0.3
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
+          }
+        });
+      },
+
+      triggerEmergencyNudge() {
+        alert('📢 AI Nudge Broadcast Sent: Alerted 4,200 tourists near Dambulla & Sigiriya to divert toward Pidurangala Rock. Expected queue mitigation: -25% in 30 mins.');
+        document.getElementById('adminSurgeMitigated').textContent = '44.8%';
+      },
+
+      resetAdminSimulations() {
+        document.getElementById('rainSlider').value = 0;
+        document.getElementById('poyaSlider').value = 0;
+        document.getElementById('rainVal').textContent = 'None (Clear)';
+        document.getElementById('poyaVal').textContent = '+0% (Normal)';
+        alert('Telemetry simulation parameters reset to live IoT feeds.');
+      },
+
+      simulateRain(val) {
+        document.getElementById('rainVal').textContent = val > 50 ? `Heavy Monsoon (${val}%)` : `Light Drizzle (${val}%)`;
+      },
+
+      simulatePoya(val) {
+        document.getElementById('poyaVal').textContent = `+${val}% Pilgrim Surge`;
+      },
+
+      throttleSelectedAttraction() {
+        const sel = document.getElementById('adminCapSelect');
+        alert(`Capacity throttle and gate quota enforced for ${sel.options[sel.selectedIndex].text}. Live tickets paused.`);
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      app.init();
+    });
+  </script>
+</body>
+</html>
