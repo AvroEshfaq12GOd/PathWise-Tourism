@@ -32,8 +32,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(85, 'up'),
   weather: { temp: 28, condition: 'Sunny' },
   features: ['Visitor trend ↑', 'Public Holiday', 'Sunny 28°C'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1588096344356-896898822184?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/temple-of-tooth.jpg',
   maxCapacity: 5000,
   region: 'Central',
   isActive: true,
@@ -51,8 +50,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(40, 'stable'),
   weather: { temp: 27, condition: 'Partly Cloudy' },
   features: ['Weekend', 'Large Area', 'Partly Cloudy'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1625733143873-d8ebaac5a8ea?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/botanical-garden.jpg',
   maxCapacity: 12000,
   region: 'Central',
   isActive: true,
@@ -70,8 +68,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(80, 'up'),
   weather: { temp: 31, condition: 'Clear' },
   features: ['Morning Peak', 'Clear 31°C', 'Weekend'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1565018981442-83b3b2462e08?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/sigiriya.jpg',
   maxCapacity: 3000,
   region: 'North Central',
   isActive: true,
@@ -89,8 +86,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(70, 'down'),
   weather: { temp: 29, condition: 'Breezy' },
   features: ['Evening Approach', 'Coastal Breeze'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/galle-fort.jpg',
   maxCapacity: 8000,
   region: 'Southern',
   isActive: true,
@@ -108,8 +104,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(70, 'up'),
   weather: { temp: 22, condition: 'Misty' },
   features: ['Train Schedule', 'Misty 22°C'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1546708973-c3184eeb0b03?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/nine-arches.jpg',
   maxCapacity: 1500,
   region: 'Uva',
   isActive: true,
@@ -127,8 +122,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(50, 'stable'),
   weather: { temp: 30, condition: 'Sunny' },
   features: ['Weekend', 'Sunny 30°C'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/mirissa-beach.jpg',
   maxCapacity: 4000,
   region: 'Southern',
   isActive: true,
@@ -146,8 +140,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(90, 'up'),
   weather: { temp: 32, condition: 'Clear' },
   features: ['Morning Safari', 'Clear 32°C'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1610309995116-248552123985?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/yala.jpg',
   maxCapacity: 500, // Jeeps
   region: 'Southern',
   isActive: true,
@@ -165,8 +158,7 @@ export const mockSites: Site[] = [
   forecastData: generateLSTMData(45, 'down'),
   weather: { temp: 29, condition: 'Partly Cloudy' },
   features: ['Afternoon Lull', 'Partly Cloudy'],
-  imageUrl:
-  'https://images.unsplash.com/photo-1624806992066-5ffcb7ca1e73?auto=format&fit=crop&q=80&w=800',
+  imageUrl: '/images/dambulla-cave.jpg',
   maxCapacity: 2000,
   region: 'Central',
   isActive: true,

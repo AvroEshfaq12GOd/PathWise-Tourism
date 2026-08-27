@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '../../components/admin/Modal';
-import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, CheckCircle2, AlertCircle, Clock, Flame } from 'lucide-react';
 import { getSitesLive, type LiveSite } from '../../lib/api';
+import { SiteImage } from '../../lib/siteImages';
+import { calculateSitePeakMetric } from '../../lib/peakCrowdEngine';
 
 export function Sites() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -160,22 +162,92 @@ export function Sites() {
                 <th className="px-6 py-4">Site Name</th>
                 <th className="px-6 py-4">Region</th>
                 <th className="px-6 py-4">Category</th>
+                <th className="px-6 py-4">Operating Hours</th>
+                <th className="px-6 py-4 bg-amber-50/60 text-amber-900 font-bold">Today's Peak Level & Window</th>
+                <th className="px-6 py-4">Live Weather</th>
                 <th className="px-6 py-4">Max Capacity</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {sites.map((site) => (
+              {sites.map((site) => {
+                const peakMetric = calculateSitePeakMetric(site);
+                return (
                 <tr
                   key={site.id}
                   className="hover:bg-slate-50/50 transition-colors"
                 >
                   <td className="px-6 py-4 font-medium text-slate-900">
-                    {site.name}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-slate-100 border border-slate-200">
+                        <SiteImage
+                          siteName={site.name}
+                          src={site.imageUrl}
+                          alt={site.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <span className="font-semibold text-slate-900 block">{site.name}</span>
+                        {site.unescoHeritage && (
+                          <span className="text-[9px] font-extrabold text-blue-700 uppercase">UNESCO</span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-slate-600">{site.region}</td>
                   <td className="px-6 py-4 text-slate-600">{site.category}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span
+                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full w-fit ${
+                          site.isOpen !== false
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            site.isOpen !== false ? 'bg-emerald-500' : 'bg-slate-400'
+                          }`}
+                        />
+                        {site.isOpen !== false ? 'Open Now' : 'Closed'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        {site.operatingHours || '09:00 AM – 05:00 PM'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 bg-amber-50/30">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`font-mono font-bold px-2 py-0.5 rounded text-xs ${
+                            peakMetric.todayPeakDensity >= 85
+                              ? 'bg-red-600 text-white font-extrabold'
+                              : peakMetric.todayPeakDensity >= 70
+                              ? 'bg-amber-500 text-white font-bold'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}
+                        >
+                          {peakMetric.todayPeakDensity}% Peak
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          (~{peakMetric.todayPeakVisitors.toLocaleString()})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] text-slate-700 font-semibold">
+                        <Clock size={12} className="text-slate-400" />
+                        <span>{peakMetric.peakWindowLabel}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80 text-xs font-semibold">
+                      ☀️ {site.weather?.temp ? `${site.weather.temp}°C` : '28°C'} {site.weather?.condition || 'Clear'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 font-mono text-slate-600">
                     {site.maxCapacity.toLocaleString()}
                   </td>
@@ -209,7 +281,8 @@ export function Sites() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>

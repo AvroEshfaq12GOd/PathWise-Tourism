@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AppHeader } from '../components/AppHeader';
-import { getSitesLive, type LiveSite } from '../lib/api';
+import { useSriLankaSync } from '../context/SriLankaSyncContext';
+import { SiteImage } from '../lib/siteImages';
 import {
   AreaChart,
   Area,
@@ -10,40 +11,15 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceArea } from
-'recharts';
-import { BrainCircuit, Info, ChevronDown } from 'lucide-react';
+  ReferenceArea
+} from 'recharts';
+import { BrainCircuit, Info, ChevronDown, Sun, CloudSun, Calendar, Sparkles, Clock, Moon } from 'lucide-react';
+import { getUpcomingHolidayOrFestival } from '../lib/sriLankaContext';
+
 export function Forecast() {
-  const [sites, setSites] = useState<LiveSite[]>([]);
+  const { timeState, sites, isLoading } = useSriLankaSync();
   const [selectedSiteId, setSelectedSiteId] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function load() {
-      setIsLoading(true);
-      try {
-        const liveSites = await getSitesLive();
-        if (!mounted) return;
-        setSites(liveSites);
-        setSelectedSiteId((current) => current || liveSites[0]?.id || '');
-      } catch {
-        if (!mounted) return;
-        setSites([]);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    }
-
-    void load();
-    const timer = window.setInterval(() => void load(), 30000);
-
-    return () => {
-      mounted = false;
-      window.clearInterval(timer);
-    };
-  }, []);
+  const holiday = getUpcomingHolidayOrFestival();
 
   const site = useMemo(
     () => sites.find((s) => s.id === selectedSiteId) || sites[0],
@@ -112,6 +88,55 @@ export function Forecast() {
             className="absolute right-4 top-3.5 text-slate-400 pointer-events-none" />
           
         </div>
+
+        {/* Site Details Card */}
+        {site && (
+          <div className="mb-5 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex gap-3.5">
+              <SiteImage
+                siteName={site.name}
+                src={site.imageUrl}
+                alt={site.name}
+                className="w-20 h-20 rounded-xl object-cover shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-[#0D6E6E] border border-emerald-100 uppercase tracking-wide">
+                    {site.category}
+                  </span>
+                  {site.unescoHeritage && (
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                      UNESCO Heritage
+                    </span>
+                  )}
+                  <span
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      site.isOpen !== false
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}
+                  >
+                    {site.isOpen !== false ? '🟢 Open Now' : '🌙 Currently Closed'}
+                  </span>
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 leading-tight truncate">{site.name}</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {site.statusLabel || site.region}
+                </p>
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-600 flex-wrap">
+                  <div className="flex items-center gap-1 font-semibold text-slate-800 bg-amber-50 text-amber-900 px-2 py-0.5 rounded-md border border-amber-200">
+                    <CloudSun size={12} className="text-amber-600" />
+                    <span>{site.weather?.temp || 28}°C {site.weather?.condition || 'Sunny'}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md font-mono text-[10px]">
+                    <Clock size={11} className="text-slate-500" />
+                    <span>{site.operatingHours || '09:00 AM – 05:00 PM'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Chart Area */}
         <div className="mb-6">

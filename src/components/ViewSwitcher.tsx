@@ -5,7 +5,23 @@ import { Smartphone, Monitor } from 'lucide-react';
 export function ViewSwitcher() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Check if current route is a signing / auth / landing page
+  const isSigningPage =
+    location.pathname === '/admin/login' ||
+    location.pathname === '/app/signin' ||
+    location.pathname === '/app/signup' ||
+    location.pathname === '/' ||
+    location.pathname.includes('login') ||
+    location.pathname.includes('signin') ||
+    location.pathname.includes('signup');
+
   const isAdmin = location.pathname.startsWith('/admin');
+
+  // Do NOT render the switcher on any signing / auth page or outside admin
+  if (isSigningPage || !isAdmin) {
+    return null;
+  }
 
   return (
     <div className="fixed top-3 right-4 sm:right-6 z-[100] bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200/90 p-1 flex items-center font-sans">
@@ -34,3 +50,4 @@ export function ViewSwitcher() {
     </div>
   );
 }
+

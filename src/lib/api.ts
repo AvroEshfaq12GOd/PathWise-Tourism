@@ -1,4 +1,5 @@
 import { TimeSeriesPoint } from '../data/lstmSim';
+import { computeSiteDayNightStatus, generateDayNightLSTMData } from './operatingHours';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
 
@@ -22,6 +23,10 @@ export interface ApiSite {
   weatherRef?: string;
   currentDensity?: number;
   currentDensityUpdatedAt?: string;
+  sltdaCertified?: boolean;
+  sltdaCategory?: string;
+  unescoHeritage?: boolean;
+  description?: string;
 }
 
 export interface ApiObservation {
@@ -100,17 +105,31 @@ export interface LiveSite {
   criticalThreshold: number;
   bestTimeVenueName?: string;
   bestTimeVenueAddress?: string;
+  sltdaCertified?: boolean;
+  sltdaCategory?: string;
+  unescoHeritage?: boolean;
+  description?: string;
+  isOpen?: boolean;
+  operatingHours?: string;
+  statusLabel?: string;
+  statusBadge?: 'open' | 'closed' | 'closing-soon' | 'night-active';
+  crowdLevel?: 'Low' | 'Moderate' | 'High' | 'Critical' | 'Closed';
+  isHolidaySurge?: boolean;
 }
 
 export interface LiveNudge {
   id: string;
   originalSiteId: string;
   altSiteId: string;
+  originalSiteName?: string;
+  altSiteName?: string;
   reason: string;
   incentive: string;
   distanceKm: number;
   travelTimeMin: number;
   status: 'pending' | 'accepted' | 'dismissed';
+  badge?: string;
+  createdAt?: string;
 }
 
 export interface LiveIncentive {
@@ -263,17 +282,29 @@ function mapSite(site: ApiSite, observations: ApiObservation[], forecast?: ApiFo
 
   const latestObservation = siteObservations[siteObservations.length - 1];
   const previousObservation = siteObservations[siteObservations.length - 2];
-  const currentDensity = clamp(Math.round(latestObservation?.density ?? site.currentDensity ?? 0));
+  const baseRawDensity = clamp(Math.round(latestObservation?.density ?? site.currentDensity ?? 65));
 
-  const trend: 'up' | 'down' | 'stable' = previousObservation
+  // Compute real-time Day/Night sync & operating hours status
+  const dayNightStatus = computeSiteDayNightStatus(
+    site.name,
+    site.category || site.sltdaCategory || '',
+    baseRawDensity,
+    true
+  );
+
+  const effectiveDensity = dayNightStatus.effectiveDensity;
+
+  const trend: 'up' | 'down' | 'stable' = !dayNightStatus.isOpen
+    ? 'stable'
+    : previousObservation
     ? latestObservation!.density > previousObservation.density + 2
       ? 'up'
       : latestObservation!.density < previousObservation.density - 2
         ? 'down'
         : 'stable'
-    : currentDensity >= site.threshold
+    : effectiveDensity >= site.threshold
       ? 'up'
-      : currentDensity <= site.threshold - 15
+      : effectiveDensity <= site.threshold - 15
         ? 'down'
         : 'stable';
 
@@ -282,8 +313,8 @@ function mapSite(site: ApiSite, observations: ApiObservation[], forecast?: ApiFo
     {
       temp: site.features?.find((feature) => /\d+°C/.test(feature))?.match(/(\d+)°C/)?.[1]
         ? Number(site.features?.find((feature) => /\d+°C/.test(feature))?.match(/(\d+)°C/)?.[1])
-        : 0,
-      condition: site.features?.find((feature) => /sunny|cloud|mist|clear|breezy/i.test(feature)) ?? 'Live'
+        : 28,
+      condition: site.features?.find((feature) => /sunny|cloud|mist|clear|breezy/i.test(feature)) ?? 'Sunny'
     };
 
   return {
@@ -292,12 +323,18 @@ function mapSite(site: ApiSite, observations: ApiObservation[], forecast?: ApiFo
     category: site.category,
     lat: site.lat,
     lng: site.lng,
-    currentDensity,
+    currentDensity: effectiveDensity,
     trend,
-    forecastData: mapForecastSeries(currentDensity, siteObservations, forecast),
+    forecastData: generateDayNightLSTMData(
+      site.name,
+      site.category || site.sltdaCategory || '',
+      site.threshold || 75,
+      trend,
+      true
+    ),
     weather: {
-      temp: Number(weather.temp ?? 0),
-      condition: String(weather.condition ?? 'Live')
+      temp: Number(weather.temp ?? 28),
+      condition: String(weather.condition ?? 'Sunny')
     },
     features: site.features ?? [],
     imageUrl: site.imageUrl || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800',
@@ -307,7 +344,17 @@ function mapSite(site: ApiSite, observations: ApiObservation[], forecast?: ApiFo
     threshold: site.threshold,
     criticalThreshold: site.criticalThreshold,
     bestTimeVenueName: site.bestTimeVenueName,
-    bestTimeVenueAddress: site.bestTimeVenueAddress
+    bestTimeVenueAddress: site.bestTimeVenueAddress,
+    sltdaCertified: site.sltdaCertified ?? true,
+    sltdaCategory: site.sltdaCategory,
+    unescoHeritage: site.unescoHeritage,
+    description: site.description,
+    isOpen: dayNightStatus.isOpen,
+    operatingHours: dayNightStatus.operatingHours,
+    statusLabel: dayNightStatus.statusLabel,
+    statusBadge: dayNightStatus.statusBadge,
+    crowdLevel: dayNightStatus.crowdLevel,
+    isHolidaySurge: dayNightStatus.isHolidaySurge
   };
 }
 

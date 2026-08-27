@@ -1,5 +1,6 @@
 import React from 'react';
 import { Battery, Wifi, Signal } from 'lucide-react';
+import { useSriLankaSync } from '../context/SriLankaSyncContext';
 
 export function PhoneFrame({
   children,
@@ -8,6 +9,14 @@ export function PhoneFrame({
   children: React.ReactNode;
   inline?: boolean;
 }) {
+  let displayTime = '9:41';
+  try {
+    const { timeState } = useSriLankaSync();
+    displayTime = `${timeState.hour.toString().padStart(2, '0')}:${timeState.minute.toString().padStart(2, '0')}`;
+  } catch {
+    // Fallback if not within sync provider
+  }
+
   const phoneContent = (
     <div className="relative w-full max-w-[390px] h-[844px] bg-white rounded-[48px] shadow-2xl border-[10px] border-slate-900 overflow-hidden flex flex-col shrink-0 select-none">
       {/* Dynamic Island / Notch */}
@@ -20,7 +29,7 @@ export function PhoneFrame({
 
       {/* Status Bar */}
       <div className="h-11 w-full bg-white/90 backdrop-blur-md flex items-center justify-between px-7 text-xs font-semibold text-slate-800 z-40 absolute top-0">
-        <span className="text-[11px] font-bold tracking-tight">9:41</span>
+        <span className="text-[11px] font-bold tracking-tight">{displayTime}</span>
         <div className="flex items-center gap-1.5 text-slate-800">
           <Signal size={13} strokeWidth={2.5} />
           <Wifi size={13} strokeWidth={2.5} />

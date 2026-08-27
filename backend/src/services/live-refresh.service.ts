@@ -2,12 +2,54 @@ import mongoose from 'mongoose';
 import { SiteModel, type SiteDoc } from '../models/Site.js';
 import { computeLiveDensity } from './crowd.service.js';
 import { refreshSiteForecast } from './forecast.service.js';
-import { inMemoryStore } from './store.service.js';
+import { inMemoryStore, initialSites } from './store.service.js';
 
 const DEFAULT_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 let refreshInFlight = false;
+
+async function syncMongoSitesIfEmpty() {
+  if (mongoose.connection.readyState !== 1) return;
+  try {
+    const count = await SiteModel.countDocuments();
+    if (count < initialSites.length) {
+      console.log(`[PathWise] Syncing ${initialSites.length} official SLTDA sites to MongoDB (found ${count})...`);
+      for (const site of initialSites) {
+        await SiteModel.findByIdAndUpdate(
+          site._id,
+          {
+            $set: {
+              name: site.name,
+              bestTimeVenueName: site.bestTimeVenueName,
+              bestTimeVenueAddress: site.bestTimeVenueAddress,
+              category: site.category,
+              sltdaCategory: site.sltdaCategory,
+              region: site.region,
+              lat: site.lat,
+              lng: site.lng,
+              maxCapacity: site.maxCapacity,
+              threshold: site.threshold,
+              criticalThreshold: site.criticalThreshold,
+              isActive: site.isActive,
+              imageUrl: site.imageUrl,
+              features: site.features,
+              currentDensity: site.currentDensity,
+              currentDensityUpdatedAt: new Date(site.currentDensityUpdatedAt || Date.now()),
+              sltdaCertified: site.sltdaCertified ?? true,
+              unescoHeritage: site.unescoHeritage ?? false,
+              description: site.description ?? ''
+            }
+          },
+          { upsert: true, new: true }
+        );
+      }
+      console.log(`[PathWise] Successfully synced all ${initialSites.length} SLTDA sites to MongoDB.`);
+    }
+  } catch (err) {
+    console.warn('[PathWise] Failed to sync sites to MongoDB:', err);
+  }
+}
 
 async function refreshActiveSites() {
   if (refreshInFlight) return;
@@ -15,6 +57,7 @@ async function refreshActiveSites() {
 
   try {
     if (mongoose.connection.readyState === 1) {
+      await syncMongoSitesIfEmpty();
       const sites = await SiteModel.find({ isActive: true }).lean<SiteDoc[]>();
 
       const results = await Promise.allSettled(
@@ -48,6 +91,7 @@ async function refreshActiveSites() {
 }
 
 export async function primeLiveData() {
+  await syncMongoSitesIfEmpty();
   await refreshActiveSites();
 }
 

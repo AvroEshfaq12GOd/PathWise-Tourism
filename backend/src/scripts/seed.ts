@@ -5,6 +5,7 @@ import { NudgeModel } from '../models/Nudge.js';
 import { AdminLogModel } from '../models/AdminLog.js';
 import { ForecastModel } from '../models/Forecast.js';
 import { ObservationModel } from '../models/Observation.js';
+import { initialSites } from '../services/store.service.js';
 
 async function seed() {
   await connectDb();
@@ -18,81 +19,44 @@ async function seed() {
     ObservationModel.deleteMany({})
   ]);
 
-  const sites = await SiteModel.insertMany([
-    {
-      name: 'Temple of the Tooth',
-      bestTimeVenueName: 'Temple of the Tooth',
-      bestTimeVenueAddress: 'Temple of the Tooth, Kandy, Sri Lanka',
-      category: 'Cultural',
-      region: 'Central',
-      lat: 7.2936,
-      lng: 80.6411,
-      maxCapacity: 5000,
-      threshold: 85,
-      criticalThreshold: 95,
-      isActive: true,
-      imageUrl: 'https://images.unsplash.com/photo-1588096344356-896898822184?auto=format&fit=crop&q=80&w=800',
-      features: ['Visitor trend ↑', 'Public Holiday', 'Sunny 28°C'],
-      currentDensity: 92
-    },
-    {
-      name: 'Royal Botanical Gardens',
-      bestTimeVenueName: 'Royal Botanical Gardens',
-      bestTimeVenueAddress: 'Royal Botanical Gardens, Peradeniya, Sri Lanka',
-      category: 'Nature',
-      region: 'Central',
-      lat: 7.2714,
-      lng: 80.5953,
-      maxCapacity: 12000,
-      threshold: 90,
-      criticalThreshold: 95,
-      isActive: true,
-      imageUrl: 'https://images.unsplash.com/photo-1625733143873-d8ebaac5a8ea?auto=format&fit=crop&q=80&w=800',
-      features: ['Weekend', 'Large Area', 'Partly Cloudy'],
-      currentDensity: 45
-    },
-    {
-      name: 'Sigiriya Rock Fortress',
-      bestTimeVenueName: 'Sigiriya Rock Fortress',
-      bestTimeVenueAddress: 'Sigiriya Rock Fortress, Sigiriya, Sri Lanka',
-      category: 'Historical',
-      region: 'North Central',
-      lat: 7.957,
-      lng: 80.7603,
-      maxCapacity: 3000,
-      threshold: 80,
-      criticalThreshold: 90,
-      isActive: true,
-      imageUrl: 'https://images.unsplash.com/photo-1565018981442-83b3b2462e08?auto=format&fit=crop&q=80&w=800',
-      features: ['Morning Peak', 'Clear 31°C', 'Weekend'],
-      currentDensity: 88
-    }
-  ]);
+  const sites = await SiteModel.insertMany(initialSites);
 
   await IncentiveModel.insertMany([
-    { name: 'Free Iced Coffee', partner: 'Barista Kandy', pointsCost: 500, redemptions: 1240, status: 'active', expiry: '2026-12-31' },
-    { name: 'Museum Pass', partner: 'National Museum', pointsCost: 1200, redemptions: 850, status: 'active', expiry: '2026-12-31' },
-    { name: '10% Off Dinner', partner: 'Galle Fort Hotel', pointsCost: 300, redemptions: 432, status: 'paused', expiry: '2026-06-30' }
+    { name: 'Free Artisan Ceylon Tea Tasting', partner: 'Mlesna Tea Fortress & Kandy Barista', pointsCost: 450, redemptions: 1420, status: 'active', expiry: '2026-12-31' },
+    { name: 'SLTDA Heritage Pass Voucher', partner: 'National Museum & Cultural Triangle', pointsCost: 1200, redemptions: 890, status: 'active', expiry: '2026-12-31' },
+    { name: '15% Off Coastal Seafood Dinner', partner: 'Galle Fort Heritage Villa & Restaurant', pointsCost: 350, redemptions: 612, status: 'active', expiry: '2026-12-31' },
+    { name: 'Free Botanical Garden Guide Audio', partner: 'Peradeniya Flora Trust', pointsCost: 200, redemptions: 1105, status: 'active', expiry: '2026-12-31' },
+    { name: 'Safari Jeep Priority Dispersal Voucher', partner: 'Udawalawe Eco Wildlife Society', pointsCost: 600, redemptions: 340, status: 'active', expiry: '2026-12-31' }
   ]);
 
   await NudgeModel.insertMany([
     {
       originalSiteId: sites[0]._id,
       altSiteId: sites[1]._id,
-      reason: 'Temple of the Tooth is predicted to hit 95% capacity at 14:00.',
+      reason: 'Temple of the Tooth Relic is peaking at 92% capacity. Royal Botanical Gardens offers peaceful shaded walking avenues.',
       incentive: '+75 PathPoints',
-      distanceKm: 5.2,
-      travelTimeMin: 15,
+      distanceKm: 5.8,
+      travelTimeMin: 18,
+      status: 'pending'
+    },
+    {
+      originalSiteId: sites[2]._id,
+      altSiteId: sites[7]._id,
+      reason: 'Sigiriya Lion Rock queue wait is ~50 mins (88% capacity). Dambulla Golden Rock Temple is currently at optimal 40% density.',
+      incentive: '+100 PathPoints',
+      distanceKm: 18.5,
+      travelTimeMin: 25,
       status: 'pending'
     }
   ]);
 
   await AdminLogModel.insertMany([
-    { action: 'Threshold updated for Sigiriya', user: 'Admin', type: 'config', timeLabel: '2h ago' },
-    { action: 'LSTM Model retrained automatically', user: 'AI Controller', type: 'system', timeLabel: '1d ago' }
+    { action: 'SLTDA official attractions catalog synchronized (35 destinations)', user: 'SLTDA Central Admin', type: 'system', timeLabel: 'Just now' },
+    { action: 'Threshold calibrated for Sigiriya Rock & Sri Dalada Maligawa', user: 'AI Dispersal Controller', type: 'config', timeLabel: '1h ago' },
+    { action: 'LSTM Neural Crowd model updated with weekend holiday data', user: 'AI Controller', type: 'system', timeLabel: '4h ago' }
   ]);
 
-  console.log('Seed complete');
+  console.log(`Seed complete with ${sites.length} sites`);
   process.exit(0);
 }
 

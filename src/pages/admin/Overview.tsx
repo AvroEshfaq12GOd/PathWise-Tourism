@@ -1,16 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { KpiCard } from '../../components/admin/KpiCard';
 import { AdminGoogleMap } from '../../components/admin/AdminGoogleMap';
 import { getAdminOverviewData, type AdminOverviewData } from '../../lib/api';
+import { calculateNationalPeakSummary, calculateSitePeakMetric } from '../../lib/peakCrowdEngine';
 import {
   MapPin,
   BrainCircuit,
   Activity,
   CheckCircle2,
   AlertTriangle,
-  Map as MapIcon
+  Map as MapIcon,
+  Sparkles,
+  Calendar,
+  Sun,
+  CloudSun,
+  Clock,
+  Flame,
+  FileText,
+  Radio,
+  ArrowRight,
+  ShieldCheck,
+  TrendingUp
 } from 'lucide-react';
+import { getSriLankaTime, getUpcomingHolidayOrFestival, SRI_LANKA_HOLIDAYS_AND_FESTIVALS } from '../../lib/sriLankaContext';
 
 // Automatically resizes Leaflet map when layout or flexbox container dimensions settle
 function MapResizer() {
@@ -52,6 +66,7 @@ function MapResizer() {
 }
 
 export function Overview() {
+  const navigate = useNavigate();
   const [data, setData] = useState<AdminOverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -85,6 +100,14 @@ export function Overview() {
     };
   }, []);
 
+  const sl = getSriLankaTime();
+  const holiday = getUpcomingHolidayOrFestival();
+
+  const peakSummary = useMemo(() => {
+    if (!data?.sites) return null;
+    return calculateNationalPeakSummary(data.sites);
+  }, [data?.sites]);
+
   const criticalSites = data?.sites.filter((s) => s.currentDensity >= s.threshold) ?? [];
   const alerts = (data?.sites ?? [])
     .filter((s) => s.currentDensity >= s.threshold)
@@ -107,6 +130,45 @@ export function Overview() {
 
   return (
     <div className="space-y-6">
+      {/* Sri Lanka Live National Operating Environment Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-[#003838] to-[#0D6E6E] rounded-2xl p-4 sm:p-5 text-white shadow-md border border-slate-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="p-3 bg-white/10 rounded-2xl border border-white/10 shrink-0">
+              <Sparkles size={24} className="text-amber-300 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-700">
+                  Island-wide Calendar Active
+                </span>
+                <span className="text-xs text-emerald-200 font-medium">
+                  {sl.dateStr} ({sl.dayOfWeek})
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
+                {holiday.current?.name || 'Nikini Full Moon Poya Day & Public Holiday'}
+              </h3>
+              <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
+                {holiday.current?.description || 'Active statutory holiday. Surge factors automatically calibrated across Cultural Triangle and Southern Coast corridors.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 bg-black/30 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-white/10">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-none">Sri Lanka Time</span>
+              <span className="text-lg font-mono font-black text-amber-300">{sl.timeStr}</span>
+            </div>
+            <div className="h-7 w-px bg-slate-700 mx-1"></div>
+            <div className="text-right">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-none">Next Holiday</span>
+              <span className="text-xs font-bold text-emerald-300">{holiday.next.name.split(' ')[0]} {holiday.next.name.split(' ')[1]}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
@@ -141,6 +203,124 @@ export function Overview() {
           trendUp={false}
         />
       </div>
+
+      {/* Daily Peak Crowd Levels & Carrying Capacity Command Hub */}
+      {peakSummary && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="bg-red-100 text-red-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase border border-red-200 flex items-center gap-1">
+                  <Flame size={10} className="text-red-600" /> Daily Peak Telemetry
+                </span>
+                <span className="text-xs font-semibold text-slate-500">
+                  {sl.dateStr} (SLST)
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mt-1">
+                Today's Peak Crowd Levels & Carrying Capacity Schedules
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                onClick={() => navigate('/admin/reports')}
+                className="bg-[#003838] hover:bg-[#095454] text-amber-300 border border-amber-300/30 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+              >
+                <FileText size={14} className="text-amber-300" />
+                <span>Generate Daily Report</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/admin/peak-monitor')}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-slate-200"
+              >
+                <TrendingUp size={14} className="text-[#0D6E6E]" />
+                <span>Peak Command Hub</span>
+                <ArrowRight size={12} />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+            <div>
+              <span className="text-slate-500 font-medium block text-[10px] uppercase">Sites Peaking Now</span>
+              <span className="text-base font-bold text-red-600 font-mono flex items-center gap-1">
+                <Flame size={14} /> {peakSummary.sitesInPeakNow.length} Sites
+              </span>
+            </div>
+
+            <div>
+              <span className="text-slate-500 font-medium block text-[10px] uppercase">Approaching Peak (&lt;2h)</span>
+              <span className="text-base font-bold text-amber-600 font-mono flex items-center gap-1">
+                <Clock size={14} /> {peakSummary.sitesApproachingPeak.length} Sites
+              </span>
+            </div>
+
+            <div>
+              <span className="text-slate-500 font-medium block text-[10px] uppercase">Avg Forecasted Peak</span>
+              <span className="text-base font-bold text-slate-900 font-mono">
+                {peakSummary.avgPeakDensity}% Density
+              </span>
+            </div>
+
+            <div>
+              <span className="text-slate-500 font-medium block text-[10px] uppercase">Critical Surge Breaches</span>
+              <span className="text-base font-bold text-purple-600 font-mono">
+                {peakSummary.criticalBreachSites.length} Protected
+              </span>
+            </div>
+          </div>
+
+          {/* Top Priority Sites Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+            {peakSummary.metrics.slice(0, 3).map((m) => (
+              <div
+                key={m.siteId}
+                onClick={() => navigate('/admin/peak-monitor')}
+                className="p-3 rounded-xl border border-slate-200 hover:border-[#0D6E6E]/40 hover:shadow-xs transition-all bg-white cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 text-xs truncate max-w-[160px] group-hover:text-[#0D6E6E]">
+                    {m.siteName}
+                  </span>
+                  <span
+                    className={`text-[10px] font-extrabold px-2 py-0.5 rounded uppercase ${
+                      m.peakStatus === 'IN_PEAK_NOW'
+                        ? 'bg-red-100 text-red-700'
+                        : m.peakStatus === 'APPROACHING_PEAK'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {m.peakStatus === 'IN_PEAK_NOW' ? 'Peaking Now' : m.peakStatus === 'APPROACHING_PEAK' ? `In ${m.minutesToPeak}m` : 'Normal'}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Peak Window:</span>
+                  <span className="font-semibold text-slate-800">{m.peakWindowLabel}</span>
+                </div>
+
+                <div className="mt-1 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Today's Peak Level:</span>
+                  <span className="font-mono font-bold text-amber-700">{m.todayPeakDensity}% (~{m.todayPeakVisitors.toLocaleString()})</span>
+                </div>
+
+                <div className="mt-2 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      m.todayPeakDensity >= 85 ? 'bg-red-500' : m.todayPeakDensity >= 70 ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                    style={{ width: `${Math.min(100, m.todayPeakDensity)}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Live Map */}

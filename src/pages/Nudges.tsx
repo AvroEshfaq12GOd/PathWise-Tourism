@@ -1,45 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppHeader } from '../components/AppHeader';
-import { getNudgesLive, getSitesLive, type LiveNudge, type LiveSite, updateNudgeStatus } from '../lib/api';
-import { MapPin, Navigation, Gift, X, Check } from 'lucide-react';
+import { useSriLankaSync } from '../context/SriLankaSyncContext';
+import { type LiveNudge, updateNudgeStatus } from '../lib/api';
+import { SiteImage } from '../lib/siteImages';
+import { MapPin, Navigation, Gift, X, Check, Moon, Sun, Sparkles } from 'lucide-react';
+
 export function Nudges() {
-  const [nudges, setNudges] = useState<LiveNudge[]>([]);
-  const [sites, setSites] = useState<LiveSite[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { timeState, sites, dynamicNudges, isLoading } = useSriLankaSync();
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState('All');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function load() {
-      setIsLoading(true);
-      try {
-        const [liveNudges, liveSites] = await Promise.all([getNudgesLive(), getSitesLive()]);
-        if (!mounted) return;
-        setNudges(liveNudges);
-        setSites(liveSites);
-      } catch {
-        if (!mounted) return;
-        setNudges([]);
-        setSites([]);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    }
-
-    void load();
-    const timer = window.setInterval(() => void load(), 30000);
-
-    return () => {
-      mounted = false;
-      window.clearInterval(timer);
-    };
-  }, []);
+  const activeNudges = useMemo(() => {
+    return dynamicNudges.filter((n) => !dismissedIds.includes(n.id));
+  }, [dynamicNudges, dismissedIds]);
 
   const handleDismiss = async (id: string) => {
-    setNudges((prev) => prev.filter((n) => n.id !== id));
+    setDismissedIds((prev) => [...prev, id]);
     setToastMsg('Alert dismissed.');
     setTimeout(() => setToastMsg(null), 3000);
     try {
@@ -50,7 +28,7 @@ export function Nudges() {
   };
 
   const handleAccept = async (id: string, incentive: string) => {
-    setNudges((prev) => prev.filter((n) => n.id !== id));
+    setDismissedIds((prev) => [...prev, id]);
     setToastMsg(`Accepted! ${incentive} added to your profile.`);
     setTimeout(() => setToastMsg(null), 3500);
     try {
@@ -68,7 +46,7 @@ export function Nudges() {
     );
   }
 
-  if (!nudges.length && !sites.length) {
+  if (!activeNudges.length && !sites.length) {
     return (
       <motion.div className="flex-1 overflow-y-auto pb-6">
         <AppHeader title="Smart Nudges" subtitle="No live alternatives available" />
@@ -130,7 +108,7 @@ export function Nudges() {
         {/* Nudge Feed */}
         <div className="space-y-4">
           <AnimatePresence>
-            {nudges.length === 0 ? (
+            {activeNudges.length === 0 ? (
               <motion.div
                 initial={{
                   opacity: 0
@@ -149,7 +127,7 @@ export function Nudges() {
                 </p>
               </motion.div>
             ) : (
-              nudges.map((nudge, index) => {
+              activeNudges.map((nudge, index) => {
                 const origSite = sites.find(
                   (s) => s.id === nudge.originalSiteId
                 );
@@ -211,9 +189,10 @@ export function Nudges() {
                         </div>
                       </div>
                       <div className="w-12 h-12 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0">
-                        <img
+                        <SiteImage
+                          siteName={altSite.name}
                           src={altSite.imageUrl}
-                          alt=""
+                          alt={altSite.name}
                           className="w-full h-full object-cover"
                         />
                       </div>

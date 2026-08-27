@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   APIProvider,
   Map,
   AdvancedMarker,
   InfoWindow,
+  useMap,
   useApiLoadingStatus,
   APILoadingStatus
 } from '@vis.gl/react-google-maps';
 import { GOOGLE_MAPS_API_KEY, DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../../config/maps';
 import { LiveSite } from '../../lib/api';
-import { Navigation, Clock, Users, Sun, Layers, ExternalLink, RefreshCw } from 'lucide-react';
+import { SiteImage } from '../../lib/siteImages';
+import { Navigation, Clock, Users, Sun, Layers, ExternalLink, RefreshCw, Car } from 'lucide-react';
 
 interface GoogleMapLiveViewProps {
   sites: LiveSite[];
@@ -17,6 +19,8 @@ interface GoogleMapLiveViewProps {
   onTimeOffsetChange: (offset: number) => void;
   selectedSiteId?: string | null;
   onSelectSite?: (siteId: string | null) => void;
+  onOpenDetails?: (site: LiveSite) => void;
+  searchQuery?: string;
 }
 
 function getDensityColor(density: number) {
@@ -26,21 +30,86 @@ function getDensityColor(density: number) {
   return { bg: 'bg-emerald-500', text: 'text-emerald-500', hex: '#10b981', label: 'Optimal' };
 }
 
-function InnerMap({ sites, timeOffset, onTimeOffsetChange, selectedSiteId, onSelectSite }: GoogleMapLiveViewProps) {
+/**
+ * Controller sub-component that interacts directly with the Google Map instance.
+ * Manages Google Maps TrafficLayer and smooth pan/zoom when site selection changes.
+ */
+function MapTrafficAndCamera({
+  showTraffic,
+  selectedSite
+}: {
+  showTraffic: boolean;
+  selectedSite: LiveSite | null;
+}) {
+  const map = useMap();
+  const trafficLayerRef = useRef<google.maps.TrafficLayer | null>(null);
+
+  // Setup / toggle real-time Google Maps Traffic Layer
+  useEffect(() => {
+    if (!map) return;
+
+    if (!trafficLayerRef.current) {
+      trafficLayerRef.current = new google.maps.TrafficLayer();
+    }
+
+    if (showTraffic) {
+      trafficLayerRef.current.setMap(map);
+    } else {
+      trafficLayerRef.current.setMap(null);
+    }
+
+    return () => {
+      trafficLayerRef.current?.setMap(null);
+    };
+  }, [map, showTraffic]);
+
+  // Pan camera to selected site
+  useEffect(() => {
+    if (!map || !selectedSite) return;
+    map.panTo({ lat: selectedSite.lat, lng: selectedSite.lng });
+    map.setZoom(Math.max(map.getZoom() ?? 8, 12));
+  }, [map, selectedSite]);
+
+  return null;
+}
+
+function InnerMap({
+  sites,
+  timeOffset,
+  onTimeOffsetChange,
+  selectedSiteId,
+  onSelectSite,
+  onOpenDetails,
+  searchQuery = ''
+}: GoogleMapLiveViewProps) {
   const [activeSite, setActiveSite] = useState<LiveSite | null>(
     sites.find((s) => s.id === selectedSiteId) ?? null
   );
   const [mapTypeId, setMapTypeId] = useState<string>('roadmap');
+  const [showTraffic, setShowTraffic] = useState<boolean>(true);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  useEffect(() => {
+    if (selectedSiteId) {
+      const site = sites.find((s) => s.id === selectedSiteId);
+      if (site) setActiveSite(site);
+    }
+  }, [selectedSiteId, sites]);
 
   const categories = ['all', ...Array.from(new Set(sites.map((s) => s.category).filter(Boolean)))];
 
-  const filteredSites = categoryFilter === 'all'
-    ? sites
-    : sites.filter((s) => s.category.toLowerCase() === categoryFilter.toLowerCase());
+  const filteredSites = sites.filter((s) => {
+    const matchesCategory =
+      categoryFilter === 'all' || s.category.toLowerCase() === categoryFilter.toLowerCase();
+    const matchesSearch =
+      !searchQuery.trim() ||
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.category.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full font-sans">
       <Map
         defaultCenter={DEFAULT_MAP_CENTER}
         defaultZoom={DEFAULT_MAP_ZOOM}
@@ -50,8 +119,12 @@ function InnerMap({ sites, timeOffset, onTimeOffsetChange, selectedSiteId, onSel
         zoomControl={true}
         streetViewControl={false}
         mapTypeControl={false}
+        internalUsageAttributionIds={["gmp_mcp_codeassist_v1_aistudio"]}
         className="w-full h-full"
       >
+        {/* Google Maps Real-Time Traffic & Camera Controller */}
+        <MapTrafficAndCamera showTraffic={showTraffic} selectedSite={activeSite} />
+
         {filteredSites.map((site) => {
           const forecastPoints = site.forecastData.filter((point) => point.isForecast);
           const displayDensity =
@@ -123,48 +196,92 @@ function InnerMap({ sites, timeOffset, onTimeOffsetChange, selectedSiteId, onSel
               )}`;
 
               return (
-                <div className="p-1 max-w-[240px] text-slate-900 font-sans">
-                  {activeSite.imageUrl && (
-                    <img
+                <div className="p-1 max-w-[260px] text-slate-900 font-sans">
+                  <div className="relative mb-2">
+                    <SiteImage
+                      siteName={activeSite.name}
                       src={activeSite.imageUrl}
                       alt={activeSite.name}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-24 object-cover rounded-lg mb-2"
+                      className="w-full h-28 object-cover rounded-lg"
                     />
-                  )}
+                      {activeSite.unescoHeritage && (
+                        <span className="absolute top-1.5 left-1.5 bg-blue-900/90 text-blue-100 backdrop-blur-sm text-[9px] font-extrabold px-2 py-0.5 rounded-md border border-blue-700 shadow-sm">
+                          UNESCO World Heritage
+                        </span>
+                      )}
+                      <span className="absolute bottom-1.5 right-1.5 bg-emerald-950/85 text-emerald-300 backdrop-blur-sm text-[9px] font-bold px-1.5 py-0.5 rounded border border-emerald-700">
+                        Live Monitored
+                      </span>
+                    </div>
                   <div className="flex items-start justify-between gap-1 mb-1">
-                    <h3 className="font-bold text-sm leading-snug">{activeSite.name}</h3>
-                    <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0">
+                    <div>
+                      <h3 className="font-bold text-sm leading-snug">{activeSite.name}</h3>
+                      <p className="text-[10px] text-slate-500 font-medium">{activeSite.region}</p>
+                    </div>
+                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-50 text-[#0D6E6E] shrink-0 border border-emerald-100">
                       {activeSite.category}
                     </span>
                   </div>
 
+                  {activeSite.description && (
+                    <p className="text-[11px] text-slate-600 line-clamp-2 my-1.5 leading-snug">
+                      {activeSite.description}
+                    </p>
+                  )}
+
                   <div className="flex items-center justify-between text-xs my-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                    <span className="text-slate-500 font-medium">Congestion Index:</span>
-                    <span className="font-extrabold text-sm" style={{ color: colorInfo.hex }}>
-                      {Math.round(displayDensity)}%
+                    <span className="text-slate-600 font-medium">
+                      {activeSite.isOpen === false ? 'Operating Status:' : 'LSTM Crowd Density:'}
+                    </span>
+                    <span
+                      className="font-extrabold text-xs px-2 py-0.5 rounded-full"
+                      style={
+                        activeSite.isOpen === false
+                          ? { backgroundColor: '#f1f5f9', color: '#475569' }
+                          : { backgroundColor: colorInfo.bg, color: colorInfo.hex }
+                      }
+                    >
+                      {activeSite.isOpen === false ? '🌙 Closed (0%)' : `${Math.round(displayDensity)}%`}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-[11px] text-slate-600 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Sun size={12} className="text-amber-500" />
-                      <span>28°C Sunny</span>
-                    </div>
-                    <span>•</span>
-                    <div>Max: {activeSite.maxCapacity.toLocaleString()}</div>
+                  <div className="text-[10px] text-slate-500 mb-2 flex items-center justify-between bg-slate-100/70 px-2 py-1 rounded">
+                    <span>Hours: <strong className="text-slate-700 font-mono">{activeSite.operatingHours || '09:00 AM – 05:00 PM'}</strong></span>
+                    <span>Cap: {activeSite.maxCapacity.toLocaleString()}</span>
                   </div>
 
-                  <a
-                    href={googleMapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <Navigation size={12} />
-                    <span>Get Directions</span>
-                    <ExternalLink size={10} className="opacity-70" />
-                  </a>
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-2.5">
+                    <div className="flex items-center gap-1">
+                      <Sun size={11} className="text-amber-500" />
+                      <span>{activeSite.weather.temp ? `${activeSite.weather.temp}°C` : '28°C'} {activeSite.weather.condition}</span>
+                    </div>
+                    <span>•</span>
+                    <div className="truncate">{activeSite.statusLabel || activeSite.region}</div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 mt-2">
+                    {onOpenDetails && (
+                      <button
+                        onClick={() => onOpenDetails(activeSite)}
+                        className="w-full bg-[#0D6E6E] hover:bg-[#095454] text-white py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                      >
+                        <Navigation size={12} />
+                        <span>View Routing, Paths & Events</span>
+                      </button>
+                    )}
+
+                    <div className="flex gap-1.5">
+                      <a
+                        href={googleMapsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors border border-slate-200"
+                      >
+                        <ExternalLink size={11} className="text-[#0D6E6E]" />
+                        <span>Open in Google Maps</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               );
             })()}
@@ -173,7 +290,7 @@ function InnerMap({ sites, timeOffset, onTimeOffsetChange, selectedSiteId, onSel
       </Map>
 
       {/* Top Filter Chips */}
-      <div className="absolute top-16 inset-x-3 z-10 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+      <div className="absolute top-3 inset-x-3 z-10 flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -189,14 +306,36 @@ function InnerMap({ sites, timeOffset, onTimeOffsetChange, selectedSiteId, onSel
         ))}
       </div>
 
-      {/* Map Style Toggle */}
-      <div className="absolute top-28 right-3 z-10">
+      {/* Floating Controls: Real-Time Traffic Layer & Map Style */}
+      <div className="absolute top-14 right-3 z-10 flex flex-col gap-2">
+        {/* Live Traffic Layer Toggle */}
         <button
-          onClick={() => setMapTypeId((prev) => (prev === 'roadmap' ? 'hybrid' : prev === 'hybrid' ? 'terrain' : 'roadmap'))}
-          className="bg-white/95 backdrop-blur p-2 rounded-xl shadow-md border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center gap-1 text-xs font-medium"
-          title="Switch Map Type"
+          onClick={() => setShowTraffic((prev) => !prev)}
+          className={`p-2 rounded-xl shadow-md border flex items-center gap-1.5 text-xs font-semibold backdrop-blur transition-all ${
+            showTraffic
+              ? 'bg-white/95 border-emerald-300 text-emerald-700 ring-2 ring-emerald-500/20'
+              : 'bg-white/90 border-slate-200 text-slate-500 hover:text-slate-800'
+          }`}
+          title="Toggle Google Maps Live Traffic Layer"
         >
-          <Layers size={14} className="text-emerald-600" />
+          <div className="relative">
+            <Car size={14} className={showTraffic ? 'text-emerald-600' : 'text-slate-400'} />
+            {showTraffic && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            )}
+          </div>
+          <span>Traffic {showTraffic ? 'ON' : 'OFF'}</span>
+        </button>
+
+        {/* Map Type Switcher */}
+        <button
+          onClick={() =>
+            setMapTypeId((prev) => (prev === 'roadmap' ? 'hybrid' : prev === 'hybrid' ? 'terrain' : 'roadmap'))
+          }
+          className="bg-white/95 backdrop-blur p-2 rounded-xl shadow-md border border-slate-200 text-slate-700 hover:bg-slate-100 flex items-center gap-1 text-xs font-medium"
+          title="Switch Map Type (Roadmap / Satellite / Terrain)"
+        >
+          <Layers size={14} className="text-[#0D6E6E]" />
           <span className="capitalize">{mapTypeId}</span>
         </button>
       </div>
@@ -205,7 +344,7 @@ function InnerMap({ sites, timeOffset, onTimeOffsetChange, selectedSiteId, onSel
       <div className="absolute bottom-6 inset-x-4 z-10 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-slate-200">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-            <Clock size={15} className="text-emerald-600" />
+            <Clock size={15} className="text-[#0D6E6E]" />
             <span>LSTM Neural Crowd Forecast</span>
           </div>
           <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
@@ -220,7 +359,7 @@ function InnerMap({ sites, timeOffset, onTimeOffsetChange, selectedSiteId, onSel
           step="1"
           value={timeOffset}
           onChange={(e) => onTimeOffsetChange(parseInt(e.target.value, 10))}
-          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+          className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0D6E6E]"
         />
 
         <div className="flex justify-between text-[10px] text-slate-500 mt-1.5 font-semibold px-0.5">
@@ -246,7 +385,7 @@ function MapLoadingFallback() {
         </div>
         <h4 className="text-sm font-bold text-slate-900 mb-1">Google Maps API Notice</h4>
         <p className="text-xs text-slate-500 max-w-xs mb-3">
-          The interactive map initialized with the provided Google Maps key. Check connectivity or project API configuration.
+          Initializing Google Maps with real-time traffic and crowd telemetry.
         </p>
       </div>
     );
@@ -254,8 +393,8 @@ function MapLoadingFallback() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-slate-50 text-slate-500">
-      <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-2" />
-      <span className="text-xs font-semibold">Initializing Google Maps...</span>
+      <div className="w-8 h-8 border-3 border-[#0D6E6E] border-t-transparent rounded-full animate-spin mb-2" />
+      <span className="text-xs font-semibold">Initializing Google Maps & Traffic Layer...</span>
     </div>
   );
 }

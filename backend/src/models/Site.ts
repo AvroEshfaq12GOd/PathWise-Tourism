@@ -17,7 +17,11 @@ const SiteSchema = new Schema(
     features: [{ type: String }],
     weatherRef: { type: String, default: '' },
     currentDensity: { type: Number, default: 0 },
-    currentDensityUpdatedAt: { type: Date, default: null }
+    currentDensityUpdatedAt: { type: Date, default: null },
+    sltdaCertified: { type: Boolean, default: true },
+    sltdaCategory: { type: String, default: '' },
+    unescoHeritage: { type: Boolean, default: false },
+    description: { type: String, default: '' }
   },
   { timestamps: true }
 );

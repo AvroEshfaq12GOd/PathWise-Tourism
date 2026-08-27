@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bell, X, AlertTriangle, Sparkles, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SriLankaLiveHeaderBanner } from './SriLankaLiveHeaderBanner';
 
 export function AppHeader({
   title,
@@ -15,6 +16,7 @@ export function AppHeader({
 
   return (
     <>
+      <SriLankaLiveHeaderBanner variant="app" />
       <div className="px-5 py-3.5 bg-white/95 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between border-b border-slate-100">
         <div>
           {subtitle && (

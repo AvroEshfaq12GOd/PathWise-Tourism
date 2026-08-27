@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HourDayHeatmap } from '../../components/admin/HourDayHeatmap';
 import {
   BarChart,
@@ -9,10 +10,11 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { ArrowRight, Download, Calendar, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Download, Calendar, CheckCircle2, FileText, Flame } from 'lucide-react';
 import { buildHourlyHeatmap, getNudgesLive, getObservationsLive, getSitesLive } from '../../lib/api';
 
 export function Analytics() {
+  const navigate = useNavigate();
   const [funnel, setFunnel] = useState<Array<{ stage: string; count: number }>>([]);
   const [heatmap, setHeatmap] = useState<number[][]>([]);
   const [barData, setBarData] = useState<Array<{ name: string; rate: number }>>([]);
@@ -128,6 +130,12 @@ export function Analytics() {
               90 Days
             </button>
           </div>
+          <button
+            onClick={() => navigate('/admin/reports')}
+            className="bg-[#003838] hover:bg-[#095454] text-amber-300 border border-amber-300/30 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors"
+          >
+            <FileText size={14} className="text-amber-300" /> Daily Peak Report
+          </button>
           <button
             onClick={handleExport}
             className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
