@@ -1,6 +1,6 @@
 import { TimeSeriesPoint } from '../data/lstmSim';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api').replace(/\/$/, '');
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
 
 type ApiEnvelope<T> = { data: T };
 
@@ -163,8 +163,8 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function getData<T>(path: string): Promise<T> {
-  const json = await requestJson<ApiEnvelope<T> | T>(path);
+async function getData<T>(path: string, init?: RequestInit): Promise<T> {
+  const json = await requestJson<ApiEnvelope<T> | T>(path, init);
   if (json && typeof json === 'object' && 'data' in json) {
     return (json as ApiEnvelope<T>).data;
   }

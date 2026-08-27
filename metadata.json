@@ -1,0 +1,6 @@
+{
+  "name": "PathWise",
+  "description": "AI-powered tourism crowd forecasting, real-time heatmaps, and smart behavioral nudge platform.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

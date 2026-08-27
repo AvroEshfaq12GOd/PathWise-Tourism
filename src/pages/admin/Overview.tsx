@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import { KpiCard } from '../../components/admin/KpiCard';
+import { AdminGoogleMap } from '../../components/admin/AdminGoogleMap';
 import { getAdminOverviewData, type AdminOverviewData } from '../../lib/api';
 import {
   MapPin,
   BrainCircuit,
   Activity,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Map as MapIcon
 } from 'lucide-react';
 
 // Automatically resizes Leaflet map when layout or flexbox container dimensions settle
@@ -53,6 +55,7 @@ export function Overview() {
   const [data, setData] = useState<AdminOverviewData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [mapProvider, setMapProvider] = useState<'google' | 'osm'>('google');
 
   useEffect(() => {
     let mounted = true;
@@ -142,8 +145,28 @@ export function Overview() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Live Map */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-          <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 flex-shrink-0">
-            <h3 className="font-bold text-slate-900">Live Congestion Map</h3>
+          <div className="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center bg-slate-50/50 flex-shrink-0 gap-3">
+            <div className="flex items-center gap-3">
+              <h3 className="font-bold text-slate-900 text-sm">Live Congestion Map</h3>
+              <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-xs font-semibold">
+                <button
+                  onClick={() => setMapProvider('google')}
+                  className={`px-2.5 py-1 rounded-md transition-all ${
+                    mapProvider === 'google' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Google Maps
+                </button>
+                <button
+                  onClick={() => setMapProvider('osm')}
+                  className={`px-2.5 py-1 rounded-md transition-all ${
+                    mapProvider === 'osm' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  OpenStreetMap
+                </button>
+              </div>
+            </div>
             <div className="flex items-center gap-3 text-xs font-medium">
               <span className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Normal
@@ -158,49 +181,52 @@ export function Overview() {
           </div>
 
           <div className="h-[420px] w-full relative z-0">
-            <MapContainer
-              center={[7.8731, 80.7718]}
-              zoom={8}
-              className="leaflet-container w-full h-full"
-              zoomControl={false}
-              style={{ width: '100%', height: '100%' }}
-            >
-              <MapResizer />
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-              {data.sites.map((site) => {
-                // radius scaled to density but clamped for visual consistency
-                const radius = Math.round(6 + (Math.min(100, site.currentDensity) / 100) * 18);
-                const fillColor =
-                  site.currentDensity >= site.criticalThreshold
-                    ? '#ef4444'
-                    : site.currentDensity >= site.threshold
-                    ? '#f59e0b'
-                    : '#10b981';
+            {mapProvider === 'google' ? (
+              <AdminGoogleMap sites={data.sites} />
+            ) : (
+              <MapContainer
+                center={[7.8731, 80.7718]}
+                zoom={8}
+                className="leaflet-container w-full h-full"
+                zoomControl={false}
+                style={{ width: '100%', height: '100%' }}
+              >
+                <MapResizer />
+                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                {data.sites.map((site) => {
+                  const radius = Math.round(6 + (Math.min(100, site.currentDensity) / 100) * 18);
+                  const fillColor =
+                    site.currentDensity >= site.criticalThreshold
+                      ? '#ef4444'
+                      : site.currentDensity >= site.threshold
+                      ? '#f59e0b'
+                      : '#10b981';
 
-                return (
-                <CircleMarker
-                  key={site.id}
-                  center={[site.lat, site.lng]}
-                  radius={radius}
-                  pathOptions={{
-                    fillColor,
-                    fillOpacity: 0.75,
-                    color: 'white',
-                    weight: 2
-                  }}
-                >
-                  <Popup>
-                    <div className="font-sans">
-                      <p className="font-bold text-sm">{site.name}</p>
-                      <p className="text-xs text-slate-500">
-                        Density: {site.currentDensity}%
-                      </p>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-                );
-              })}
-            </MapContainer>
+                  return (
+                    <CircleMarker
+                      key={site.id}
+                      center={[site.lat, site.lng]}
+                      radius={radius}
+                      pathOptions={{
+                        fillColor,
+                        fillOpacity: 0.75,
+                        color: 'white',
+                        weight: 2
+                      }}
+                    >
+                      <Popup>
+                        <div className="font-sans">
+                          <p className="font-bold text-sm">{site.name}</p>
+                          <p className="text-xs text-slate-500">
+                            Density: {site.currentDensity}%
+                          </p>
+                        </div>
+                      </Popup>
+                    </CircleMarker>
+                  );
+                })}
+              </MapContainer>
+            )}
           </div>
         </div>
 

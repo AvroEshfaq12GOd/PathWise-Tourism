@@ -1,34 +1,36 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Smartphone, Monitor } from 'lucide-react';
+
 export function ViewSwitcher() {
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = location.pathname.startsWith('/admin');
-  // Hide on landing, admin login, and all mobile app routes to avoid overlay clutter
-  if (
-    location.pathname === '/' ||
-    location.pathname === '/admin/login' ||
-    location.pathname.startsWith('/app')
-  ) {
-    return null;
-  }
+
   return (
-    <div className="fixed top-4 right-4 z-[100] bg-white rounded-full shadow-lg border border-slate-200 p-1 flex items-center font-sans">
+    <div className="fixed top-3 right-4 sm:right-6 z-[100] bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200/90 p-1 flex items-center font-sans">
       <button
         onClick={() => navigate('/app')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${!isAdmin ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
-        
-        <Smartphone size={16} />
-        Tourist App
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+          !isAdmin
+            ? 'bg-slate-900 text-white shadow-sm'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+        }`}
+      >
+        <Smartphone size={13} strokeWidth={2.5} />
+        <span>Tourist App</span>
       </button>
       <button
         onClick={() => navigate('/admin')}
-        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${isAdmin ? 'bg-brand-700 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
-        
-        <Monitor size={16} />
-        Admin Console
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+          isAdmin
+            ? 'bg-[#0D6E6E] text-white shadow-sm'
+            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+        }`}
+      >
+        <Monitor size={13} strokeWidth={2.5} />
+        <span>Admin Console</span>
       </button>
-    </div>);
-
+    </div>
+  );
 }

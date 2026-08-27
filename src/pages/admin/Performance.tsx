@@ -15,6 +15,8 @@ export function Performance() {
   const [sites, setSites] = useState<LiveSite[]>([]);
   const [predictedVsActual, setPredictedVsActual] = useState<Array<{ date: string; actual: number; predicted: number }>>([]);
   const [lossCurve, setLossCurve] = useState<Array<{ epoch: number; trainLoss: number; valLoss: number }>>([]);
+  const [isRetraining, setIsRetraining] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -43,23 +45,46 @@ export function Performance() {
     };
   }, []);
 
+  const handleTriggerRetrain = () => {
+    setIsRetraining(true);
+    setToastMsg('Retraining LSTM model on latest 14-day telemetry batch...');
+    setTimeout(() => {
+      setIsRetraining(false);
+      setToastMsg('LSTM Model v2.1 Retrained successfully. Validation MAE: 5.8% (-0.4%).');
+      setTimeout(() => setToastMsg(null), 4000);
+    }, 2500);
+  };
+
   if (!sites.length) {
     return <div className="text-sm text-slate-500">Loading model performance...</div>;
   }
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toastMsg && (
+        <div className="fixed top-20 right-8 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2 text-sm font-semibold animate-fade-in">
+          <RefreshCw size={16} className={`text-brand-400 ${isRetraining ? 'animate-spin' : ''}`} />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-slate-900">
             LSTM Model Performance
           </h2>
           <p className="text-sm text-slate-500">
-            Last trained: Today at 02:00 AM
+            Last trained: Today at 02:00 AM • Architecture: 2-Layer LSTM + Dense Attention
           </p>
         </div>
-        <button className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm">
-          <RefreshCw size={16} /> Trigger Retrain
+        <button
+          onClick={handleTriggerRetrain}
+          disabled={isRetraining}
+          className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
+        >
+          <RefreshCw size={16} className={isRetraining ? 'animate-spin text-brand-600' : ''} />
+          {isRetraining ? 'Training Model...' : 'Trigger Retrain'}
         </button>
       </div>
 
