@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   APIProvider,
   Map as GoogleMapComponent,
@@ -39,6 +40,7 @@ function AdminTrafficLayer({ enabled }: { enabled: boolean }) {
 }
 
 function InnerAdminMap({ sites }: AdminGoogleMapProps) {
+  const navigate = useNavigate();
   const [activeSite, setActiveSite] = useState<AdminOverviewData['sites'][0] | null>(null);
   const [mapTypeId, setMapTypeId] = useState<string>('roadmap');
   const [showTraffic, setShowTraffic] = useState<boolean>(true);
@@ -115,18 +117,26 @@ function InnerAdminMap({ sites }: AdminGoogleMapProps) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    activeSite.name + ', Sri Lanka'
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[11px] text-[#0D6E6E] hover:underline font-semibold flex items-center gap-1"
+              <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-100">
+                <button
+                  onClick={() => navigate('/admin/peak-monitor')}
+                  className="w-full bg-[#0D6E6E] hover:bg-[#095454] text-white py-1.5 px-2 rounded-md text-[11px] font-bold text-center transition-colors shadow-2xs"
                 >
-                  <span>Open in Google Maps</span>
-                  <ExternalLink size={10} />
-                </a>
+                  Inspect in Peak Hub
+                </button>
+                <div className="text-right">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      activeSite.name + ', Sri Lanka'
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-slate-400 hover:text-slate-600 inline-flex items-center gap-1 hover:underline"
+                  >
+                    <span>External Google Maps</span>
+                    <ExternalLink size={9} />
+                  </a>
+                </div>
               </div>
             </div>
           </InfoWindow>

@@ -15,7 +15,9 @@ import {
   Filter,
   BarChart3,
   SlidersHorizontal,
-  ChevronDown
+  ChevronDown,
+  Search,
+  X
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
 
@@ -23,6 +25,7 @@ export function PeakMonitor() {
   const { sites, refreshAll } = useSriLankaSync();
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'all' | 'in_peak' | 'approaching' | 'critical'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const sl = getSriLankaTime();
@@ -30,12 +33,20 @@ export function PeakMonitor() {
 
   const activeMetrics = useMemo(() => {
     return summary.metrics.filter((m) => {
+      const matchSearch =
+        !searchQuery.trim() ||
+        m.siteName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.region.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.siteId.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (!matchSearch) return false;
       if (selectedTab === 'in_peak') return m.peakStatus === 'IN_PEAK_NOW';
       if (selectedTab === 'approaching') return m.peakStatus === 'APPROACHING_PEAK';
       if (selectedTab === 'critical') return m.surgeRiskLevel === 'CRITICAL' || m.isBreachedNow;
       return true;
     });
-  }, [summary.metrics, selectedTab]);
+  }, [summary.metrics, selectedTab, searchQuery]);
 
   const currentSelectedMetric = useMemo(() => {
     if (selectedSiteId) {
@@ -289,45 +300,70 @@ export function PeakMonitor() {
 
       {/* Grid of All Site Peak Cards */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
             <span>All Site Peak Schedules & Daily Density Ledger</span>
+            <span className="text-xs bg-slate-100 text-slate-700 font-mono px-2 py-0.5 rounded-full font-bold">
+              {activeMetrics.length} Sites
+            </span>
           </h3>
 
-          {/* Filter Tabs */}
-          <div className="flex items-center gap-1 bg-slate-200/80 p-1 rounded-xl text-xs font-semibold">
-            <button
-              onClick={() => setSelectedTab('all')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedTab === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              All ({summary.metrics.length})
-            </button>
-            <button
-              onClick={() => setSelectedTab('in_peak')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedTab === 'in_peak' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Peaking Now ({summary.sitesInPeakNow.length})
-            </button>
-            <button
-              onClick={() => setSelectedTab('approaching')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedTab === 'approaching' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Approaching ({summary.sitesApproachingPeak.length})
-            </button>
-            <button
-              onClick={() => setSelectedTab('critical')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedTab === 'critical' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Critical ({summary.criticalBreachSites.length})
-            </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Search Box */}
+            <div className="relative min-w-[220px]">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search sites (e.g. Jaffna)..."
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:border-[#0D6E6E] outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1 bg-slate-200/80 p-1 rounded-xl text-xs font-semibold">
+              <button
+                onClick={() => setSelectedTab('all')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  selectedTab === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All ({summary.metrics.length})
+              </button>
+              <button
+                onClick={() => setSelectedTab('in_peak')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  selectedTab === 'in_peak' ? 'bg-red-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Peaking Now ({summary.sitesInPeakNow.length})
+              </button>
+              <button
+                onClick={() => setSelectedTab('approaching')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  selectedTab === 'approaching' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Approaching ({summary.sitesApproachingPeak.length})
+              </button>
+              <button
+                onClick={() => setSelectedTab('critical')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  selectedTab === 'critical' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Critical ({summary.criticalBreachSites.length})
+              </button>
+            </div>
           </div>
         </div>
 

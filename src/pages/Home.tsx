@@ -298,7 +298,7 @@ export function Home() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate(`/app/forecast`)}
+                onClick={() => navigate(`/app/forecast?site=${currentSite.id}`)}
                 className="text-[#0D6E6E] text-xs font-bold flex items-center gap-1 hover:underline"
               >
                 Forecast <ArrowRight size={13} />

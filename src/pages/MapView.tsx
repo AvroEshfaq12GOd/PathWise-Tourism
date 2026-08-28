@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { useSriLankaSync } from '../context/SriLankaSyncContext';
 import { GoogleMapLiveView } from '../components/maps/GoogleMapLiveView';
@@ -8,12 +9,23 @@ import { LiveSite } from '../lib/api';
 import { Search, X, MapPin } from 'lucide-react';
 
 export function MapView() {
+  const [searchParams] = useSearchParams();
+  const querySiteId = searchParams.get('site');
   const [timeOffset, setTimeOffset] = useState(0); // 0 = now, 1 = +1h, etc.
   const { sites, isLoading } = useSriLankaSync();
-  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(querySiteId || null);
   const [modalSite, setModalSite] = useState<LiveSite | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  useEffect(() => {
+    if (querySiteId && sites.length > 0) {
+      const match = sites.find((s) => s.id.toLowerCase() === querySiteId.toLowerCase());
+      if (match) {
+        setSelectedSiteId(match.id);
+      }
+    }
+  }, [querySiteId, sites]);
 
   const searchResults = searchQuery.trim()
     ? sites.filter(

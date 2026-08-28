@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   APIProvider,
   Map,
@@ -82,6 +83,7 @@ function InnerMap({
   onOpenDetails,
   searchQuery = ''
 }: GoogleMapLiveViewProps) {
+  const navigate = useNavigate();
   const [activeSite, setActiveSite] = useState<LiveSite | null>(
     sites.find((s) => s.id === selectedSiteId) ?? null
   );
@@ -266,21 +268,17 @@ function InnerMap({
                         className="w-full bg-[#0D6E6E] hover:bg-[#095454] text-white py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                       >
                         <Navigation size={12} />
-                        <span>View Routing, Paths & Events</span>
+                        <span>Site Details & Directions</span>
                       </button>
                     )}
 
-                    <div className="flex gap-1.5">
-                      <a
-                        href={googleMapsUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors border border-slate-200"
-                      >
-                        <ExternalLink size={11} className="text-[#0D6E6E]" />
-                        <span>Open in Google Maps</span>
-                      </a>
-                    </div>
+                    <button
+                      onClick={() => navigate(`/app/forecast?site=${activeSite.id}`)}
+                      className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-slate-200"
+                    >
+                      <Users size={12} className="text-[#0D6E6E]" />
+                      <span>View AI Crowd Forecast</span>
+                    </button>
                   </div>
                 </div>
               );

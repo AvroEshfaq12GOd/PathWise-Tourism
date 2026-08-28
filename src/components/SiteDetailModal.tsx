@@ -670,28 +670,41 @@ export function SiteDetailModal({ site, isOpen, onClose, onSelectSite }: SiteDet
                   </div>
                 </div>
 
-                {/* Primary Google Maps Navigation Button */}
+                {/* Primary In-App Map Navigation & Forecast Buttons */}
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      onClose();
+                      navigate(`/app/map?site=${site.id}`);
+                    }}
+                    className="flex-1 bg-[#0D6E6E] hover:bg-[#095454] text-white py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-transform active:scale-[0.98]"
+                  >
+                    <Navigation size={15} />
+                    <span>Open In-App Map & GPS Route</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onClose();
+                      navigate(`/app/forecast?site=${site.id}`);
+                    }}
+                    className="px-3.5 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-soft"
+                    title="View AI Crowd Prediction"
+                  >
+                    <TrendingUp size={14} className="text-[#0D6E6E]" />
+                    <span>AI Forecast</span>
+                  </button>
+                </div>
+
+                <div className="text-right">
                   <a
                     href={googleMapsRouteUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex-1 bg-[#0D6E6E] hover:bg-[#095454] text-white py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-transform active:scale-[0.98]"
+                    className="text-[10px] text-slate-400 hover:text-slate-600 inline-flex items-center gap-1 hover:underline"
                   >
-                    <Navigation size={15} className="animate-pulse" />
-                    <span>Start Turn-by-Turn GPS Route</span>
-                    <ExternalLink size={12} className="opacity-80" />
-                  </a>
-
-                  <a
-                    href={googleMapsDirectUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3.5 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-soft"
-                    title="Open in Google Maps App"
-                  >
-                    <MapPin size={14} className="text-[#0D6E6E]" />
-                    <span>Map View</span>
+                    <span>External Google Maps directions</span>
+                    <ExternalLink size={9} />
                   </a>
                 </div>
 
@@ -975,7 +988,7 @@ export function SiteDetailModal({ site, isOpen, onClose, onSelectSite }: SiteDet
             <button
               onClick={() => {
                 onClose();
-                navigate('/app/forecast');
+                navigate(`/app/forecast?site=${site.id}`);
               }}
               className="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
             >
@@ -983,15 +996,16 @@ export function SiteDetailModal({ site, isOpen, onClose, onSelectSite }: SiteDet
               <span>AI Crowd Forecast</span>
             </button>
 
-            <a
-              href={googleMapsRouteUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={() => {
+                onClose();
+                navigate(`/app/map?site=${site.id}`);
+              }}
               className="flex-1 py-2.5 px-3 rounded-xl bg-[#0D6E6E] hover:bg-[#095454] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-transform active:scale-95"
             >
               <Navigation size={14} />
-              <span>Navigate Live</span>
-            </a>
+              <span>In-App Live Map</span>
+            </button>
           </div>
         </motion.div>
       </div>
