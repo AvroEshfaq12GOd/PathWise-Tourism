@@ -28,24 +28,37 @@ export const SriLankaLiveHeaderBanner: React.FC<SriLankaLiveHeaderBannerProps> =
           <div className="flex items-center gap-1.5 border-r border-slate-700 pr-3">
             <Clock size={13} className="text-amber-400 animate-pulse" />
             <div>
-              <span className="text-[10px] text-slate-400 font-medium mr-1">SLT (UTC+5:30):</span>
+              <span className="text-[10px] text-slate-400 font-medium mr-1">SLT:</span>
               <span className="font-mono font-bold text-amber-300">{slTime.timeStr}</span>
             </div>
           </div>
 
-          {/* Today's Holiday or Festival */}
+          {/* Today's Holiday or Next Upcoming */}
           <button
             onClick={() => setShowCalendarModal(true)}
             className="flex items-center gap-1.5 hover:text-emerald-300 transition-colors text-left"
             title="View 2026/2027 Sri Lanka Holiday & Festival Calendar"
           >
             <Sparkles size={13} className="text-emerald-400 shrink-0" />
-            <span className="max-w-[190px] truncate font-medium text-slate-200">
-              {holidayData.current?.name || 'Nikini Poya Day'}
-            </span>
-            <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[9px] font-bold uppercase">
-              {holidayData.current?.type || 'Poya'}
-            </span>
+            {isCurrentHoliday ? (
+              <>
+                <span className="max-w-[190px] truncate font-medium text-slate-200">
+                  {holidayData.current?.name}
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[9px] font-bold uppercase">
+                  {holidayData.current?.type || 'Active'}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="max-w-[190px] truncate font-medium text-slate-300">
+                  Standard Day • Next: {holidayData.next.name.split(' ')[0]} {holidayData.next.type === 'Poya' ? 'Poya' : ''}
+                </span>
+                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700 text-[9px] font-mono font-bold">
+                  in {holidayData.daysUntilNext}d
+                </span>
+              </>
+            )}
           </button>
         </div>
 
@@ -73,18 +86,31 @@ export const SriLankaLiveHeaderBanner: React.FC<SriLankaLiveHeaderBannerProps> =
             <span className="hidden sm:inline text-emerald-100/90 text-[11px] font-medium">{slTime.dateStr} ({slTime.dayOfWeek})</span>
           </div>
 
-          {/* Holiday / Festival Pill with Click to View Calendar */}
+          {/* Holiday / Festival / Calendar Pill */}
           <button
             onClick={() => setShowCalendarModal(true)}
             className="flex items-center gap-2 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-400/30 px-2.5 py-1 rounded-full text-slate-100 hover:text-white transition-all group shrink-0"
           >
             <Sparkles size={12} className="text-amber-300 group-hover:rotate-12 transition-transform" />
-            <span className="font-medium text-[11px] max-w-[140px] sm:max-w-[200px] truncate text-emerald-100">
-              {holidayData.current?.name || 'Nikini Poya Public Holiday'}
-            </span>
-            <span className="bg-amber-400/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded border border-amber-300/30 uppercase">
-              Active Today
-            </span>
+            {isCurrentHoliday ? (
+              <>
+                <span className="font-medium text-[11px] max-w-[140px] sm:max-w-[200px] truncate text-emerald-100">
+                  {holidayData.current?.name}
+                </span>
+                <span className="bg-amber-400/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded border border-amber-300/30 uppercase">
+                  Active Today
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-[11px] max-w-[140px] sm:max-w-[200px] truncate text-emerald-100">
+                  Next: {holidayData.next.name}
+                </span>
+                <span className="bg-white/10 text-amber-300 text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border border-white/20">
+                  in {holidayData.daysUntilNext} days ({holidayData.next.month} {holidayData.next.day})
+                </span>
+              </>
+            )}
           </button>
         </div>
       </div>

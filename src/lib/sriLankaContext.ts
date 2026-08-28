@@ -1,10 +1,12 @@
 export interface SriLankaHoliday {
   name: string;
   type: 'Poya' | 'Public' | 'Festival' | 'Bank';
-  date: string;
+  date: string; // YYYY-MM-DD
+  endDate?: string; // Optional end date for multi-day festivals (YYYY-MM-DD)
   month: string;
   day: number;
   description: string;
+  affectedSites?: string[]; // Specific site IDs if localized festival
 }
 
 /**
@@ -47,7 +49,7 @@ export const SRI_LANKA_HOLIDAYS_AND_FESTIVALS: SriLankaHoliday[] = [
     name: 'Maha Shivaratri Day',
     type: 'Festival',
     date: '2026-02-16',
-    month: 'Festival',
+    month: 'Feb',
     day: 16,
     description: 'Great Night of Shiva at Koneswaram, Munneswaram & Thiruketheeswaram.'
   },
@@ -79,6 +81,7 @@ export const SRI_LANKA_HOLIDAYS_AND_FESTIVALS: SriLankaHoliday[] = [
     name: 'Sinhala & Tamil New Year (Aluth Avurudda)',
     type: 'Festival',
     date: '2026-04-13',
+    endDate: '2026-04-14',
     month: 'Apr',
     day: 13,
     description: 'Traditional astrological Solar New Year with folk games, fireworks and sweets.'
@@ -103,6 +106,7 @@ export const SRI_LANKA_HOLIDAYS_AND_FESTIVALS: SriLankaHoliday[] = [
     name: 'Vesak Full Moon Poya (Sacred 2-Day)',
     type: 'Poya',
     date: '2026-05-11',
+    endDate: '2026-05-12',
     month: 'May',
     day: 11,
     description: 'Triple sacred celebration of Buddha’s Birth, Enlightenment and Parinirvana. Colorful Pandols & Dansal.'
@@ -111,7 +115,7 @@ export const SRI_LANKA_HOLIDAYS_AND_FESTIVALS: SriLankaHoliday[] = [
     name: 'Poson Full Moon Poya Day',
     type: 'Poya',
     date: '2026-06-09',
-    month: 'Poya',
+    month: 'Jun',
     day: 9,
     description: 'Arrival of Arahat Mahinda introducing Buddhism to Sri Lanka at Mihintale Rock.'
   },
@@ -124,20 +128,33 @@ export const SRI_LANKA_HOLIDAYS_AND_FESTIVALS: SriLankaHoliday[] = [
     description: 'Holy feast of sacrifice honoring Abraham’s devotion.'
   },
   {
+    name: 'Kataragama Esala Festival',
+    type: 'Festival',
+    date: '2026-07-15',
+    endDate: '2026-07-29',
+    month: 'Jul',
+    day: 15,
+    description: 'Multi-faith sacred Kataragama Pada Yatra pilgrimage, kavadi and fire-walking rituals.',
+    affectedSites: ['kataragama', 'site-kataragama', 'kataragama-temple']
+  },
+  {
     name: 'Esala Full Moon Poya & Kandy Perahera',
     type: 'Festival',
     date: '2026-07-29',
     month: 'Jul',
     day: 29,
-    description: 'Grand Grand Esala Perahera of the Sacred Tooth Relic with fire dancers & tusker.'
+    description: 'Grand Esala Perahera of the Sacred Tooth Relic with fire dancers & tusker.',
+    affectedSites: ['temple-of-tooth', 'kandy', 'site-kandy']
   },
   {
-    name: 'Kataragama Esala Festival',
+    name: 'Nallur Kandaswamy Festival (Jaffna)',
     type: 'Festival',
-    date: '2026-07-20',
-    month: 'Jul',
-    day: 20,
-    description: 'Multi-faith sacred Kataragama Pada Yatra pilgrimage, kavadi and fire-walking rituals.'
+    date: '2026-08-16',
+    endDate: '2026-09-08',
+    month: 'Aug',
+    day: 16,
+    description: '25-day vibrant chariot & deity procession attracting global Hindu diaspora to Jaffna Nallur Kovil.',
+    affectedSites: ['nallur-kovil', 'jaffna-fort', 'site-jaffna', 'site-nallur']
   },
   {
     name: 'Nikini Full Moon Poya Day',
@@ -146,14 +163,6 @@ export const SRI_LANKA_HOLIDAYS_AND_FESTIVALS: SriLankaHoliday[] = [
     month: 'Aug',
     day: 27,
     description: 'First Sangha Dhamma council held under Maha Kassapa Thero.'
-  },
-  {
-    name: 'Nallur Kandaswamy Festival (Jaffna)',
-    type: 'Festival',
-    date: '2026-08-20',
-    month: 'Aug',
-    day: 20,
-    description: '25-day vibrant chariot & deity procession attracting global Hindu diaspora to Jaffna.'
   },
   {
     name: 'Binara Full Moon Poya Day',
@@ -217,6 +226,8 @@ export function getSriLankaTime(): {
   hour: number;
   minute: number;
   isPoyaDay: boolean;
+  isHolidayToday: boolean;
+  todayIso: string; // YYYY-MM-DD
   rawDate: Date;
 } {
   const now = new Date();
@@ -261,47 +272,78 @@ export function getSriLankaTime(): {
   const minute = parseInt(new Intl.DateTimeFormat('en-US', optionsMinute).format(now), 10) || 0;
   const isNight = hour < 6 || hour >= 18;
 
-  // Check if today matches any Poya day in the Sri Lankan calendar
-  const todayMmDd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const isPoyaDay = SRI_LANKA_HOLIDAYS_AND_FESTIVALS.some(
-    (h) => h.type === 'Poya' && h.date.slice(5) === todayMmDd
-  );
+  // Format today's YYYY-MM-DD in Asia/Colombo
+  const formatterIso = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Colombo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const todayIso = formatterIso.format(now); // e.g. "2026-08-28"
 
-  return { timeStr, timeWithSeconds, dateStr, dayOfWeek, isNight, hour, minute, isPoyaDay, rawDate: now };
+  // Check if today matches any Poya day or active holiday/festival
+  const activeEvent = SRI_LANKA_HOLIDAYS_AND_FESTIVALS.find((h) => {
+    if (h.endDate) {
+      return todayIso >= h.date && todayIso <= h.endDate;
+    }
+    return h.date === todayIso;
+  });
+
+  const isPoyaDay = activeEvent?.type === 'Poya';
+  const isHolidayToday = Boolean(activeEvent);
+
+  return {
+    timeStr,
+    timeWithSeconds,
+    dateStr,
+    dayOfWeek,
+    isNight,
+    hour,
+    minute,
+    isPoyaDay,
+    isHolidayToday,
+    todayIso,
+    rawDate: now
+  };
 }
 
 /**
- * Finds the upcoming Sri Lankan holiday/festival or current day status
+ * Finds the active Sri Lankan holiday/festival for today or the next chronological upcoming holiday
  */
 export function getUpcomingHolidayOrFestival(): {
   current?: SriLankaHoliday;
   next: SriLankaHoliday;
   daysUntilNext: number;
+  isTodayHoliday: boolean;
 } {
   const sl = getSriLankaTime();
-  // Find current day match or next closest
-  const todayStr = sl.rawDate.toISOString().slice(5, 10); // MM-DD
-  const current = SRI_LANKA_HOLIDAYS_AND_FESTIVALS.find(h => h.date.slice(5, 10) === todayStr);
+  const todayIso = sl.todayIso;
 
-  // Return next upcoming
-  const next = SRI_LANKA_HOLIDAYS_AND_FESTIVALS[0];
+  // 1. Find if today is an active holiday or festival
+  const current = SRI_LANKA_HOLIDAYS_AND_FESTIVALS.find((h) => {
+    if (h.endDate) {
+      return todayIso >= h.date && todayIso <= h.endDate;
+    }
+    return h.date === todayIso;
+  });
+
+  // 2. Find next chronological holiday in future
+  const futureHolidays = SRI_LANKA_HOLIDAYS_AND_FESTIVALS.filter(
+    (h) => (h.endDate ? h.endDate > todayIso : h.date > todayIso)
+  ).sort((a, b) => a.date.localeCompare(b.date));
+
+  const next = futureHolidays[0] || SRI_LANKA_HOLIDAYS_AND_FESTIVALS[0];
+
+  // Calculate days until next holiday
+  const todayDateObj = new Date(todayIso + 'T00:00:00');
+  const nextDateObj = new Date(next.date + 'T00:00:00');
+  const diffTime = Math.max(0, nextDateObj.getTime() - todayDateObj.getTime());
+  const daysUntilNext = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
   return {
-    current: current || {
-      name: 'Nikini Full Moon Poya Day',
-      type: 'Poya',
-      date: '2026-08-27',
-      month: 'Aug',
-      day: 27,
-      description: 'First Sangha Council commemoration, island-wide holiday with elevated pilgrimage crowd density.'
-    },
-    next: {
-      name: 'Binara Full Moon Poya Day',
-      type: 'Poya',
-      date: '2026-09-25',
-      month: 'Sep',
-      day: 25,
-      description: 'Order of Bhikkhunis celebration in Mahiyangana & Kandy.'
-    },
-    daysUntilNext: 29
+    current,
+    next,
+    daysUntilNext,
+    isTodayHoliday: Boolean(current)
   };
 }

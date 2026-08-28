@@ -139,18 +139,26 @@ export function Overview() {
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-700">
-                  Island-wide Calendar Active
+                <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                  holiday.isTodayHoliday
+                    ? 'bg-amber-400/20 text-amber-300 border-amber-300/40'
+                    : 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                }`}>
+                  {holiday.isTodayHoliday ? 'Active Holiday / Festival' : 'Standard Operating Day'}
                 </span>
                 <span className="text-xs text-emerald-200 font-medium">
                   {sl.dateStr} ({sl.dayOfWeek})
                 </span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
-                {holiday.current?.name || 'Nikini Full Moon Poya Day & Public Holiday'}
+                {holiday.isTodayHoliday
+                  ? holiday.current?.name
+                  : `Normal Baseline • Next: ${holiday.next.name}`}
               </h3>
               <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
-                {holiday.current?.description || 'Active statutory holiday. Surge factors automatically calibrated across Cultural Triangle and Southern Coast corridors.'}
+                {holiday.isTodayHoliday
+                  ? holiday.current?.description
+                  : `Next island-wide holiday in ${holiday.daysUntilNext} days on ${holiday.next.month} ${holiday.next.day} (${holiday.next.type}). Standard diurnal carrying capacity model applied.`}
               </p>
             </div>
           </div>
@@ -162,8 +170,12 @@ export function Overview() {
             </div>
             <div className="h-7 w-px bg-slate-700 mx-1"></div>
             <div className="text-right">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-none">Next Holiday</span>
-              <span className="text-xs font-bold text-emerald-300">{holiday.next.name.split(' ')[0]} {holiday.next.name.split(' ')[1]}</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block leading-none">
+                {holiday.isTodayHoliday ? 'Next Holiday' : 'Countdown'}
+              </span>
+              <span className="text-xs font-bold text-emerald-300">
+                {holiday.isTodayHoliday ? holiday.next.name.split(' ')[0] : `in ${holiday.daysUntilNext} days`}
+              </span>
             </div>
           </div>
         </div>

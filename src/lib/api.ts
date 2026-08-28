@@ -288,8 +288,7 @@ function mapSite(site: ApiSite, observations: ApiObservation[], forecast?: ApiFo
   const dayNightStatus = computeSiteDayNightStatus(
     site.name,
     site.category || site.sltdaCategory || '',
-    baseRawDensity,
-    true
+    baseRawDensity
   );
 
   const effectiveDensity = dayNightStatus.effectiveDensity;

@@ -118,7 +118,9 @@ export function Reports() {
       agency: 'PathWise Tourism Intelligence & Operations Console',
       generatedAt: sl.timeWithSeconds + ' SLST',
       date: sl.dateStr,
-      activeHolidayOrFestival: holiday.current?.name || 'Standard Working Day',
+      activeHolidayOrFestival: holiday.isTodayHoliday
+        ? holiday.current?.name
+        : `Standard Working Day (Next: ${holiday.next.name} in ${holiday.daysUntilNext}d)`,
       nationalSummary: {
         totalMonitoredCapacity: summary.totalMonitoredCapacity,
         totalCurrentVisitors: summary.totalCurrentVisitors,
@@ -304,7 +306,9 @@ export function Reports() {
               </div>
               <div>
                 <span className="text-slate-500 font-medium">Calendar Status: </span>
-                <span className="font-bold text-emerald-700">{holiday.current?.name || 'Statutory Normal Day'}</span>
+                <span className="font-bold text-emerald-700">
+                  {holiday.isTodayHoliday ? holiday.current?.name : 'Statutory Normal Day'}
+                </span>
               </div>
             </div>
           </div>

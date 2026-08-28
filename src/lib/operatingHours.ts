@@ -1,3 +1,5 @@
+import { getSriLankaTime } from './sriLankaContext';
+
 /**
  * Sri Lanka Tourism Operational Hours, Day-Night Diurnal Curve & Real-Time Sync Engine
  */
@@ -343,10 +345,12 @@ export function computeSiteDayNightStatus(
   siteName: string,
   category: string,
   basePeakDensity: number,
-  isHoliday: boolean = true
+  isHoliday?: boolean
 ): SiteDayNightStatus {
   const profile = getSiteOperatingProfile(siteName, category);
   const { decimalHour, hour } = getCurrentSriLankaDecimalHour();
+  const sl = getSriLankaTime();
+  const effectiveHoliday = isHoliday !== undefined ? isHoliday : sl.isHolidayToday;
 
   // Determine if open right now
   let isOpen = false;
@@ -404,9 +408,9 @@ export function computeSiteDayNightStatus(
   }
 
   // Surge multipliers for Poya/Festivals and peak base
-  let holidayMultiplier = isHoliday ? 1.2 : 1.0;
-  if (profile.categoryType === 'temple' && isHoliday) {
-    holidayMultiplier = 1.35; // Temples surge on Poya days
+  let holidayMultiplier = effectiveHoliday ? 1.2 : 1.0;
+  if (profile.categoryType === 'temple' && (sl.isPoyaDay || effectiveHoliday)) {
+    holidayMultiplier = 1.35; // Temples surge on Poya / pilgrimage days
   }
 
   let calculatedDensity = Math.round(basePeakDensity * diurnalFactor * holidayMultiplier);

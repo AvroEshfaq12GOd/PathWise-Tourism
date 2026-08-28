@@ -476,9 +476,15 @@ export function Forecast() {
                 {feature}
               </span>
             ))}
-            <span className="bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-amber-200">
-              📅 Holiday Active: {holiday.current?.name || holiday.next.name}
-            </span>
+            {holiday.isTodayHoliday ? (
+              <span className="bg-amber-50 text-amber-800 px-2.5 py-1 rounded-lg text-[11px] font-bold border border-amber-200">
+                📅 Holiday Active: {holiday.current?.name}
+              </span>
+            ) : (
+              <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg text-[11px] font-medium border border-emerald-200">
+                📅 Regular Day • Next: {holiday.next.name.split(' ')[0]} {holiday.next.type === 'Poya' ? 'Poya' : ''} in {holiday.daysUntilNext}d
+              </span>
+            )}
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-start gap-2 text-xs text-slate-500">
